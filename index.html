@@ -385,6 +385,8 @@ html.nopno .pno{display:none}
 .page{width:var(--pagew);height:var(--pageh);contain:strict}   /* ページの中の字を描き直しても、ほかのページの計算をしない */
 .pno{top:calc(var(--pad) + var(--cell)*(var(--rows) + .9))}
 .ch.hd{font-weight:500}
+/* 半角の文字：字の長さをフォントの幅どおりにする（縦書きの中で横倒しになる） */
+.ch.lat{height:calc(var(--cell)*var(--a));text-orientation:mixed}
 html.wmedium .ch.hd{font-weight:500;-webkit-text-stroke:.03em currentColor}
 /* 傍点：字の右側に点を打つ */
 .dot{position:absolute;pointer-events:none;z-index:3;right:calc(var(--padx,var(--pad)) + var(--c)*var(--step) - var(--cell)*.33);
@@ -499,7 +501,7 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
 
   <section class="tab" id="tabLint" hidden>
     <div class="tabhead"><span id="lCount"></span><span class="small">原稿の順</span></div>
-    <p class="small">句読点やカギ括弧の重複、閉じていないカッコ、半角の空白、ルビ・傍点の記号の誤り、段落の頭の字下げ漏れを表示します。</p>
+    <p class="small">句読点やカギ括弧の重複、閉じていないカッコ、日本語のあいだの半角の空白、ルビ・傍点の記号の誤り、段落の頭の字下げ漏れを表示します。</p>
     <ol id="lList"></ol>
     <p class="small" id="lEmpty" hidden>誤りは見つかりません。</p>
     <p class="small" id="lIgn" hidden><span id="lIgnN"></span>　<button type="button" id="lIgnReset" class="lnk">すべて知らせるように戻す</button></p>
@@ -580,7 +582,7 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
       </div>
     </div>
     <div class="small">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
-    <div class="small">Version 0.04</div>
+    <div class="small">Version 0.05</div>
   </div>
 </div>
 <div class="scrim" id="manPanel" hidden>
@@ -1113,18 +1115,46 @@ function rotRuns(d){
   }
   return r;
 }
-/* 配置：rows＝1行の字数。opt.print＝カーソルの位置にかかわらず記号を隠す、opt.lite＝字の位置を記録しない（原稿用紙換算の計算用）。
-   長い原稿でも入力が重くならないよう、字ごとの位置は数の配列（SC＝行、SR＝行の中の位置）に持ち、
-   行ごとの字の並び（cells）は、画面に描くときなどに必要になった行だけ作る（cellsOf） */
+/* 半角の文字（英数字・記号・空白）の幅：画面のフォントで測る。全角の字の幅を1とした値（字の大きさは1字分の0.92倍） */
+const GLYPH=0.78*1.18;
+const advCache=new Map(); let advFont='';
+const mctx=document.createElement('canvas').getContext('2d');
+/* 書体・太さを切り替えたときだけ測り直す（毎回フォントを調べると、入力のたびに画面全体の計算が走るため） */
+let advDirty=true;
+new MutationObserver(()=>{ advDirty=true; }).observe(document.documentElement,{attributes:true,attributeFilter:['class','data-theme']});
+function refreshAdvFont(){
+  if(!advDirty) return; advDirty=false;
+  const cs=getComputedStyle(document.documentElement);
+  const f=`${(cs.getPropertyValue('--f-w')||'300').trim()} 100px ${(cs.getPropertyValue('--f-ms')||'serif').trim()}`;
+  if(f!==advFont){ advFont=f; advCache.clear(); }
+}
+function advOf(ch){
+  let v=advCache.get(ch); if(v!==undefined) return v;
+  mctx.font=advFont; v=mctx.measureText(ch).width/100*GLYPH;
+  if(!(v>0)) v=ch===' '?0.25:0.5;
+  advCache.set(ch,v); return v;
+}
+/* フォントの読み込みが終わったら、幅を測り直して並べ直す */
+if(document.fonts){ const again=()=>{ advCache.clear(); advFont=''; advDirty=true; if(L) render(); }; document.fonts.addEventListener&&document.fonts.addEventListener('loadingdone',again); document.fonts.ready.then(again); }
+const isLat=ch=>{ if(ch.length!==1) return false; const c=ch.charCodeAt(0); return c>=0x20&&c<=0x7E; };
+const isWord=ch=>{ if(ch.length!==1) return false; const c=ch.charCodeAt(0); return c>=0x21&&c<=0x7E; };
+const EPS=1e-6;
+/* 配置：rows＝1行の長さ（全角の字数）。
+   画面では、全角の字は1字分、半角の文字はフォントの幅どおりに並べる（マス目は前提にしない）。
+   英単語（半角の英数字・記号のひと続き）が行の終わりにかかったら、単語ごと次の行に送る（1行に入りきらない長さのときだけ途中で分ける）。
+   行の終わりに入りきらない句読点・閉じカッコ（2字まで）と半角の空白は、行の下にぶら下げる。
+   opt.lite＝原稿用紙換算の計算用。こちらはこれまでどおりマス目で数え、半角の文字は2文字で1マスとする。
+   長い原稿でも入力が重くならないよう、字ごとの位置は数の配列（SC＝行、SR＝行の中の位置、SA＝字の長さ）に持つ */
 let slotBuf=null;
 function layout(d,rows,opt){
   opt=opt||{};
   const lite=!!opt.lite, n=d.length;
   const cols=[], endMap=lite?null:{}, rot=rotRuns(d);
-  let SC=null, SR=null;
+  let SC=null, SR=null, SA=null;
   if(!lite){
-    if(!slotBuf||slotBuf.SC.length<n+1){ const cap=Math.max(1024,Math.ceil((n+1)*1.25)); slotBuf={SC:new Int32Array(cap),SR:new Int32Array(cap)}; }
-    SC=slotBuf.SC; SR=slotBuf.SR; SC.fill(-1,0,n+1);
+    refreshAdvFont();
+    if(!slotBuf||slotBuf.SC.length<n+1){ const cap=Math.max(1024,Math.ceil((n+1)*1.25)); slotBuf={SC:new Int32Array(cap),SR:new Float32Array(cap),SA:new Float32Array(cap)}; }
+    SC=slotBuf.SC; SR=slotBuf.SR; SA=slotBuf.SA; SC.fill(-1,0,n+1);
   }
   const rubies=rubyRuns(d), emphs=emphRuns(d), hidden=new Uint8Array(n), markup=new Uint8Array(n), shownR=[], shownE=[];
   for(const g of rubies){
@@ -1142,66 +1172,87 @@ function layout(d,rows,opt){
   const pcol=[];
   let i=0, p=0, col, ci=0;
   const open=first=>{
-    col={start:i,p,t:types[p]||'body',cells:null,hang:[],row:0};
+    col={start:i,p,t:types[p]||'body',cells:null,hang:[],row:0,hangEnd:0};
     if(first) pcol[p]=cols.length;
     ci=cols.length; cols.push(col);
   };
   open(true);
-  while(true){
-    if(i===n){ col.end=i; if(endMap) endMap[i]=ci; break; }
-    const ch=d[i];
-    if(ch==='\n'){ col.end=i; if(endMap) endMap[i]=ci; i++; p++; open(true); continue; }
-    if(hidden[i]){ if(SC){ SC[i]=ci; SR[i]=Math.min(col.row,rows); } i++; continue; }
-    if(col.row<rows && !col.hang.length){
-      const re=rot[i];
-      if(re){
-        /* 欧文：行の残りに収まらないときは、次の行の頭から入れる（1行に収まらない長さのときだけ、行の途中で分ける） */
-        const m=re-i, need=Math.ceil(m/2), room=rows-col.row;
-        if(need>room&&col.row>0&&need<=rows){ col.end=i; open(false); continue; }
-        const take=Math.min(m,room*2), k=Math.ceil(take/2);
-        if(SC) for(let q=0;q<take;q++){ SC[i+q]=ci; SR[i+q]=col.row+(q>>1); }
-        col.row+=k; i+=take; continue;
+  if(lite){
+    /* 原稿用紙換算：マス目に並べる */
+    while(true){
+      if(i===n){ col.end=i; break; }
+      const ch=d[i];
+      if(ch==='\n'){ col.end=i; i++; p++; open(true); continue; }
+      if(hidden[i]){ i++; continue; }
+      if(col.row<rows && !col.hang.length){
+        const re=rot[i];
+        if(re){
+          const m=re-i, need=Math.ceil(m/2), room=rows-col.row;
+          if(need>room&&col.row>0&&need<=rows){ col.end=i; open(false); continue; }
+          const take=Math.min(m,room*2);
+          col.row+=Math.ceil(take/2); i+=take; continue;
+        }
+        col.row++; i++; continue;
       }
-      if(SC){ SC[i]=ci; SR[i]=col.row; }
-      col.row++; i++; continue;
+      if(col.row===rows && HANG.has(ch) && col.hang.length<2){ col.hang.push({i,ch}); i++; continue; }
+      col.end=i; open(false);
     }
-    if(col.row===rows && HANG.has(ch) && col.hang.length<2){
-      col.hang.push({i,ch}); if(SC){ SC[i]=ci; SR[i]=rows; } i++; continue;
+    return {cols,pcol,markup};
+  }
+  /* 画面：字ごとの幅を足していく */
+  let prevWord=false;   /* 直前の（隠していない）字が英単語の字か */
+  while(true){
+    if(i===n){ col.end=i; endMap[i]=ci; break; }
+    const ch=d[i];
+    if(ch==='\n'){ col.end=i; endMap[i]=ci; i++; p++; prevWord=false; open(true); continue; }
+    if(hidden[i]){ SC[i]=ci; SR[i]=Math.min(col.hang.length?col.hangEnd:col.row,rows); SA[i]=0; i++; continue; }
+    const lat=isLat(ch), word=lat&&ch!==' ';
+    if(word&&!prevWord&&col.row>0&&!col.hang.length){
+      /* 英単語の頭：単語ごと行に入らなければ、次の行に送る */
+      let w=0; for(let k=i;k<n&&(hidden[k]||isWord(d[k]));k++) if(!hidden[k]) w+=advOf(d[k]);
+      if(col.row+w>rows+EPS&&w<=rows+EPS){ col.end=i; open(false); continue; }
+    }
+    const a=lat?advOf(ch):1;
+    if(!col.hang.length&&col.row+a<=rows+EPS){
+      SC[i]=ci; SR[i]=col.row; SA[i]=a; col.row+=a; i++; prevWord=word; continue;
+    }
+    if((HANG.has(ch)||ch===' ')&&col.hang.length<2&&col.row>0){
+      const r=col.hang.length?col.hangEnd:col.row;
+      col.hang.push({i,ch,r,a}); col.hangEnd=r+a;
+      SC[i]=ci; SR[i]=r; SA[i]=a; i++; prevWord=word; continue;
+    }
+    if(col.row===0&&!col.hang.length){   /* 1行に1字も入らない（字が行より長い）ときも、その字を置いて先に進む */
+      SC[i]=ci; SR[i]=0; SA[i]=a; col.row=a; i++; prevWord=word; continue;
     }
     col.end=i; open(false);
   }
-  if(lite) return {cols,pcol,markup};
-  const slotAtL=k=>SC[k]>=0?{c:SC[k],r:SR[k]}:null;
-  /* ルビの位置：親文字のマスを行ごとに分け、読みを親文字の数に応じて振り分ける */
+  const slotAtL=k=>SC[k]>=0?{c:SC[k],r:SR[k],a:SA[k]}:null;
+  /* ルビの位置：親文字を行ごとに分け、読みを親文字の数に応じて振り分ける */
   const rubyAt=new Map(), dotAt=new Map();
   const put=(m,c,x)=>{ let a=m.get(c); if(!a) m.set(c,a=[]); a.push(x); };
   for(const g of shownR){
     const segs=[];
     for(let k=g.bs;k<g.be;k++){ const sl=slotAtL(k); if(!sl||sl.r>=rows) continue; const last=segs[segs.length-1];
-      if(last&&last.c===sl.c){ last.r1=Math.max(last.r1,sl.r); last.n++; } else segs.push({c:sl.c,r0:sl.r,r1:sl.r,n:1}); }
+      if(last&&last.c===sl.c){ last.r1=Math.max(last.r1,sl.r+sl.a); last.n++; } else segs.push({c:sl.c,r0:sl.r,r1:sl.r+sl.a,n:1}); }
     const rd=d.slice(g.rs,g.re), tot=segs.reduce((a,x)=>a+x.n,0); let used=0, acc=0;
-    segs.forEach((x,k)=>{ acc+=x.n; const upto=k===segs.length-1?rd.length:Math.round(rd.length*acc/tot); if(upto>used) put(rubyAt,x.c,{c:x.c,r0:x.r0,r1:x.r1,text:rd.slice(used,upto).join(''),s:g.s}); used=Math.max(used,upto); });
+    segs.forEach((x,k)=>{ acc+=x.n; const upto=k===segs.length-1?rd.length:Math.round(rd.length*acc/tot); if(upto>used) put(rubyAt,x.c,{c:x.c,r0:x.r0,h:x.r1-x.r0,text:rd.slice(used,upto).join(''),s:g.s}); used=Math.max(used,upto); });
   }
   /* 傍点：文字ごとに、その字の右側に点を打つ（空白と句読点には打たない） */
   for(const g of shownE){
-    for(let k=g.s+2;k<g.e-2;k++){ const sl=slotAtL(k); if(!sl||sl.r>=rows||NODOT.has(d[k])) continue; put(dotAt,sl.c,{r:sl.r}); }
+    for(let k=g.s+2;k<g.e-2;k++){ const sl=slotAtL(k); if(!sl||sl.r>=rows||NODOT.has(d[k])) continue; put(dotAt,sl.c,{r:sl.r+(sl.a-1)/2}); }
   }
-  return {cols,SC,SR,n,endMap,rot,hidden,rows,rubyAt,dotAt,markup,pcol,emph:emphs,rubies};
+  return {cols,SC,SR,SA,n,endMap,rot,hidden,rows,rubyAt,dotAt,markup,pcol,emph:emphs,rubies};
 }
 const NODOT=new Set([...'　 、。，．,.・…‥「」『』（）()'] );
-/* 字の位置：k文字目が何行目（c）の何字目（r）にあるか */
-function slotAt(k){ return L&&k<L.n&&L.SC[k]>=0?{c:L.SC[k],r:L.SR[k]}:null; }
-/* 行の字の並び：必要になったときに作る */
+/* 字の位置：k文字目が何行目（c）の、行の頭からどれだけの位置（r。全角の字の幅が1）にあるか。aは字の長さ */
+function slotAt(k){ return L&&k<L.n&&L.SC[k]>=0?{c:L.SC[k],r:L.SR[k],a:L.SA[k]}:null; }
+/* 行の字の並び（ぶら下げを除く）：必要になったときに作る */
 function cellsOf(col){
   if(col.cells) return col.cells;
-  const out=[], rows=L.rows, rot=L.rot, hid=L.hidden, e=col.end;
-  let r=0, i=col.start;
-  while(i<e){
-    if(hid[i]){ i++; continue; }
-    if(r>=rows) break;   /* 残りは行末のぶら下げ */
-    const re=rot[i];
-    if(re){ const m=re-i, take=Math.min(m,(rows-r)*2), k=Math.ceil(take/2); out.push({i,ch:doc.slice(i,i+take).join(''),r,n:take,k,rot:true}); r+=k; i+=take; continue; }
-    out.push({i,ch:doc[i],r,n:1}); r++; i++;
+  const out=[], hid=L.hidden, hang=new Set(col.hang.map(h=>h.i));
+  for(let i=col.start;i<col.end;i++){
+    if(hid[i]||hang.has(i)) continue;
+    out.push({i,ch:doc[i],r:L.SR[i],a:L.SA[i],lat:isLat(doc[i])});
   }
   return col.cells=out;
 }
@@ -1284,43 +1335,39 @@ function makePage(){
 }
 /* ページの字は行ごとの箱に入れ、変わった行だけを描き直す（入力のたびにページ全体を作り直さない） */
 function clearPage(pg){ if(!pg.on) return; pg.ink.innerHTML=''; pg.cls=[]; pg.csig=[]; pg.on=false; }
-const WIDEC=/[A-Z@%&#mwMW]/;
 function paintPage(p){
   const pg=pages[p];
   if(pg.cls.length!==PER){ pg.ink.innerHTML=''; pg.cls=[]; pg.csig=[]; for(let lc=0;lc<PER;lc++){ const d=document.createElement('div'); d.className='cl'; pg.ink.appendChild(d); pg.cls.push(d); pg.csig.push(''); } }
   pg.on=true;
   for(let lc=0;lc<PER;lc++){
     const c=p*PER+lc, col=L.cols[c];
-    let html='', sig='', wide=false;
+    let html='', sig='';
     if(col){
       const hd=col.t==='head'?' hd':'';
       for(const x of cellsOf(col)){
-        if(x.rot){ /* 欧文：1字を半マスに入れ、字数が奇数のときは前後に4分の1マスずつ空ける */
-          const cs=[...x.ch], off=(x.k*2-cs.length)/4;
-          html+=`<span class="ch rot${hd}" style="--c:${lc};--r:${x.r};--k:${x.k}">`+cs.map((ch,j)=>{ const w=WIDEC.test(ch); if(w) wide=true; return `<span${w?' class="w"':''} style="--o:${off+j/2}"><i>${ch===' '?'&nbsp;':esc(ch)}</i></span>`; }).join('')+'</span>'; }
-        else html+=`<span class="ch${ASC.test(x.ch)?' up':''}${hd}" style="--c:${lc};--r:${x.r}">${esc(x.ch)}</span>`;
+        if(x.ch===' '){ sig+='_'+x.r; continue; }   /* 半角の空白：何も描かない（幅だけ空ける） */
+        if(x.lat) html+=`<span class="ch lat${hd}" style="--c:${lc};--r:${x.r};--a:${x.a}">${esc(x.ch)}</span>`;   /* 半角の文字：横倒しにして、幅どおりに置く */
+        else html+=`<span class="ch${hd}" style="--c:${lc};--r:${x.r}">${esc(x.ch)}</span>`;
         sig+=x.r+x.ch+hd;
       }
       const rbs=L.rubyAt.get(c);
       if(rbs) for(const rb of rbs){
-        const m=[...rb.text].length, h=rb.r1-rb.r0+1;
+        const m=[...rb.text].length, h=rb.h;
         html+=`<span class="ruby${m*0.34>h?' dense':''}" data-c="${c}" data-r="${rb.r0}" title="読みを直す・ルビを外す" style="--c:${lc};--r:${rb.r0};--n:${h}">${[...rb.text].map(ch=>`<span>${esc(ch)}</span>`).join('')}</span>`;
         sig+='\u0003'+rb.r0+rb.text;
       }
       const dts=L.dotAt.get(c);
       if(dts) for(const dt of dts){ html+=`<span class="dot" style="--c:${lc};--r:${dt.r}">﹅</span>`; sig+='\u0006'+dt.r; }
-      if(col.hang.length){
-        const s=col.hang.map(h=>h.ch).join('');
-        html+=`<span class="ch${col.hang.length>1?' two':''}${hd}" style="--c:${lc};--r:${ROWS}">${esc(s)}</span>`;
-        sig+='\u0001'+s;
+      const hs=col.hang.filter(h=>h.ch!==' ');
+      if(hs.length){   /* 行末のぶら下げ：2字のときは1字分に収める */
+        const s=hs.map(h=>h.ch).join('');
+        html+=`<span class="ch${hs.length>1?' two':''}${hd}" style="--c:${lc};--r:${hs[0].r}">${esc(s)}</span>`;
+        sig+='\u0001'+hs[0].r+s;
       }
       sig+='|'+ROWS;
     }
     if(pg.csig[lc]!==sig){
       pg.cls[lc].innerHTML=html; pg.csig[lc]=sig;
-      /* 欧文：半マスに収まらない幅の広い文字（大文字・m・w など）だけ、文字の向きに沿って縮める。
-         幅を測ると画面全体の計算が走るため、測るのはこの字があるときだけ */
-      if(wide) pg.cls[lc].querySelectorAll('.ch.rot>span.w').forEach(el=>{ const g=el.firstChild, lim=el.clientHeight*0.96, h=g.offsetHeight; if(h>lim) el.style.setProperty('--sy',(lim/h).toFixed(3)); });
     }
   }
 }
@@ -1380,7 +1427,7 @@ const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function caretCR(){
   if(caret<doc.length && doc[caret]!=='\n') return slotAt(caret);
   const c=L.endMap[caret]; const col=L.cols[c];
-  return {c,r:col.hang.length?ROWS+1:col.row};
+  return {c,r:col.hang.length?col.hangEnd:col.row};
 }
 function cellXY(c,r){
   const p=Math.floor(c/PER), lc=c%PER, pg=pages[p].el;
@@ -1431,12 +1478,12 @@ function spanBoxes(ranges){
   const spans={};
   for(const [a,b] of ranges) for(let k=a;k<b;k++){
     const s=slotAt(k); if(!s) continue;
-    const key=s.c+':'+a, e=spans[key]||(spans[key]={c:s.c,a:s.r,b:s.r}); e.a=Math.min(e.a,s.r); e.b=Math.max(e.b,s.r);
+    const key=s.c+':'+a, e=spans[key]||(spans[key]={c:s.c,a:s.r,b:s.r+s.a}); e.a=Math.min(e.a,s.r); e.b=Math.max(e.b,s.r+s.a);
   }
   let h='';
   for(const k in spans){
     const sp=spans[k], {x,y}=cellXY(sp.c,sp.a);
-    h+=`<div style="left:${x-2}px;top:${y}px;width:${G.cell+4}px;height:${(sp.b-sp.a+1)*G.cell}px"></div>`;
+    h+=`<div style="left:${x-2}px;top:${y}px;width:${G.cell+4}px;height:${Math.max(2,(sp.b-sp.a)*G.cell)}px"></div>`;
   }
   return h;
 }
@@ -1655,13 +1702,14 @@ function findLints(){
       for(const x of st.splice(k)) if(x.c!==o) out.push({a:x.i,b:x.i+1,k:'閉じていないカッコ'});
     }
   }
-  /* 半角の空白：英数字のあいだにあるもの（90度回して入れる部分）は対象外 */
+  /* 半角の空白：日本語の字と字のあいだにあるものだけ（英数字の前後や英単語のあいだの空白は、ふつうの書き方なので対象外） */
+  const jp=c=>c!=null&&c!=='\n'&&c!==' '&&c!=='　'&&!isLat(c);
   for(const x of P){
     for(let i=x.start;i<x.end;i++){
-      if(doc[i]!==' '||(L.rot&&L.rot[i])) continue;
-      if(i===x.start||doc.slice(x.start,i).every(c=>c===' '||c==='　')) continue;   /* 段落の頭の字下げは対象外 */
-      let j=i+1; while(j<x.end&&doc[j]===' '&&!(L.rot&&L.rot[j])) j++;
-      out.push({a:i,b:j,k:'半角の空白'}); i=j-1;
+      if(doc[i]!==' ') continue;
+      let j=i+1; while(j<x.end&&doc[j]===' ') j++;
+      if(i>x.start&&jp(doc[i-1])&&j<x.end&&jp(doc[j])) out.push({a:i,b:j,k:'日本語のあいだの半角の空白'});
+      i=j-1;
     }
   }
   /* ルビ・傍点の記号の誤り：「｜」「《」「》」が、正しいルビや傍点の形になっていない */
@@ -1833,12 +1881,10 @@ function move(i,ext){
   caret=Math.max(0,Math.min(doc.length,i)); if(anchor===caret) anchor=null;
   lastKind=''; render(); scrollToCaret();
 }
+/* 行の中の位置 r（全角の字の幅が1）に近い、字と字の境目の位置を返す */
 function idxAt(col,r){
-  for(const x of cellsOf(col)){
-    if(x.rot&&r>=x.r&&r<x.r+x.k) return x.i+Math.min(x.n,(r-x.r)*2);   /* 欧文のマスの中：2文字ごとに区切る */
-    if(x.r>=r) return x.i;
-  }
-  if(r>=ROWS&&col.hang.length) return col.hang[0].i;
+  for(const x of cellsOf(col)) if(x.r+x.a/2>=r) return x.i;
+  for(const h of col.hang) if(h.r+h.a/2>=r) return h.i;
   return col.end;
 }
 function colMove(d,ext){
@@ -2034,7 +2080,7 @@ function hitTest(x,y){
     const fr=rc.right-x, ly=y-rc.top;
     let best=0, bd=Infinity;
     for(let lc=0;lc<PER;lc++){ const d=Math.abs(fr-(colRight(lc)+G.cell/2)); if(d<bd){bd=d;best=lc;} }
-    const r=Math.max(0,Math.min(ROWS,Math.floor((ly-G.pad)/G.cell)));
+    const r=Math.max(0,(ly-G.pad)/G.cell);
     const c=p*PER+best;
     if(c>=L.cols.length) return doc.length;
     return idxAt(L.cols[c],r);
@@ -2126,8 +2172,8 @@ function hitPos(x,y){
   const c=p*PER+lcB;
   if(c>=L.cols.length) return doc.length;
   const col=L.cols[c];
-  const r=Math.max(0,Math.round((ly-G.pad)/G.cell));
-  if(r>ROWS) return col.end;
+  const r=Math.max(0,(ly-G.pad)/G.cell);
+  if(r>ROWS+1) return col.end;
   return idxAt(col,r);
 }
 let lastPt=null, scrollRaf=0;
