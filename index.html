@@ -427,6 +427,9 @@ main{padding-left:max(var(--gap,16px),env(safe-area-inset-left,0px));padding-rig
 #outline + main{padding-left:var(--gap,16px)}
 #sheets{gap:var(--gap,16px)}
 html.fit{scroll-padding-top:calc(var(--barh,56px) + env(safe-area-inset-top,0px) + var(--gap,16px))}
+/* iPadのホーム画面のアプリ：集中モードでも、上端に残す帯（上端のぼかしを防ぐためのもの）に、
+   枚数・文字数（左）、今いる章（中央）、選択中の文字数と保存の状態（右）を表示する */
+html.ipadapp.focus .bar>#topInfo{visibility:visible;height:calc(14px + max(0px, 26px - env(safe-area-inset-top,0px)))}
 /* ---------- ウェブアプリ版：同期のログインと、同期の確認中の表示（Hongaki と同じ） ---------- */
 .sybox{display:flex;flex-direction:column;gap:8px}
 .sybox input{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--edge);border-radius:7px;background:var(--paper);color:var(--ink)}
@@ -582,7 +585,7 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
       </div>
     </div>
     <div class="small">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
-    <div class="small">Version 0.05</div>
+    <div class="small">Version 1.00</div>
   </div>
 </div>
 <div class="scrim" id="manPanel" hidden>
