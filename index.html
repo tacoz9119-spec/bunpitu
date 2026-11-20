@@ -430,6 +430,17 @@ html.fit{scroll-padding-top:calc(var(--barh,56px) + env(safe-area-inset-top,0px)
 /* iPadのホーム画面のアプリ：集中モードでも、上端に残す帯（上端のぼかしを防ぐためのもの）に、
    枚数・文字数（左）、今いる章（中央）、選択中の文字数と保存の状態（右）を表示する */
 html.ipadapp.focus .bar>#topInfo{visibility:visible;height:calc(14px + max(0px, 26px - env(safe-area-inset-top,0px)))}
+/* カーソル：iPadとMacの両方で、アプリ独自の青い横線（字の幅）を出す。色は配色に合わせて切り替える。
+   iPadは標準のカーソルの幅を変えられないため、入力欄のカーソルは透明にする。
+   ただし日本語の変換中は、変換中の文字をiPad標準の入力欄で見せるので、アプリのカーソルを隠し、標準のカーソルを青で出す（二重にしない） */
+:root{--caret:#2563EB}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--caret:#6EA8FE} }
+:root[data-theme="dark"]{--caret:#6EA8FE}
+#caret{background:var(--caret);width:calc(var(--cell)*.92)}
+html.ipad #ta{caret-color:transparent}
+html.ipad #caret{display:block}
+html.ipad.composing #caret{display:none}
+html.ipad.composing #ta{caret-color:var(--caret)}
 /* ---------- ウェブアプリ版：同期のログインと、同期の確認中の表示（Hongaki と同じ） ---------- */
 .sybox{display:flex;flex-direction:column;gap:8px}
 .sybox input{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--edge);border-radius:7px;background:var(--paper);color:var(--ink)}
@@ -585,7 +596,7 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
       </div>
     </div>
     <div class="small">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
-    <div class="small">Version 1.00</div>
+    <div class="small">Version 1.01</div>
   </div>
 </div>
 <div class="scrim" id="manPanel" hidden>
@@ -1464,7 +1475,7 @@ function placeCaret(){
   if(!L||!G||!pages.length) return;
   caretEl.hidden=!!selRange();
   const {c,r}=caretCR(); const {x,y}=cellXY(c,r);
-  caretEl.style.left=(x+G.cell*.08)+'px'; caretEl.style.top=(y-1)+'px';
+  caretEl.style.left=(x+G.cell*.04)+'px'; caretEl.style.top=(y-1)+'px';
   if(document.documentElement.classList.contains('ipad')){
     /* iPad：入力欄は縦書きで、カーソルの行から下に重ねる（変換中はこの入力欄を見せる） */
     const w=G.step*3, rightEdge=x+G.cell+(G.step-G.cell)/2;
@@ -2318,6 +2329,10 @@ $('lhSel').addEventListener('click',e=>{
   LH=parseFloat(b.dataset.lh); try{ localStorage.setItem('bunpitu-lh',String(LH)); }catch(err){}
   applyLookUI(); relayout();
 });
+/* 変換中かどうかを画面の作りに伝える（iPadで、変換中だけ標準のカーソルを出すため） */
+ta.addEventListener('compositionstart',()=>document.documentElement.classList.add('composing'));
+ta.addEventListener('compositionend',()=>document.documentElement.classList.remove('composing'));
+ta.addEventListener('blur',()=>document.documentElement.classList.remove('composing'));
 
 /* ---------- 「その他」パネル ---------- */
 const fmtDate=t=>{ if(!t) return ''; const d=new Date(t); return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`; };
