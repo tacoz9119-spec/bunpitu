@@ -1,0 +1,2774 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bunpitu</title>
+<meta name="theme-color" content="#F5F6F6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bunpitu">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" id="touchIcon" href="icon-180.png">
+<script>
+/* ホーム画面のアイコン：iPadはホーム画面に追加したときに1回だけアイコンを取り込む。
+   そのときの外観がダークならダークのアイコン、ライトなら明るいアイコンを使う */
+(function(){
+  var l=document.getElementById('touchIcon'), m=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)');
+  function u(){ l.href=(m&&m.matches)?'icon-180-dark.png':'icon-180.png'; }
+  u(); if(m){ if(m.addEventListener) m.addEventListener('change',u); else if(m.addListener) m.addListener(u); }
+})();
+</script>
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+<style>
+/* 画面用のフォント（縦書き用の字形の情報入り）。原稿の書体は「GK Serif」（明朝体）・「GK Sans」（ゴシック体）、
+   一覧の題名などには「Noto Serif JP」を使う。最初の明朝体（細め）以外は、初めて使ったときに読み込む */
+@font-face{font-family:"Noto Serif JP";src:url("notoserifjp-300-screen.woff2") format("woff2");font-weight:400 700;font-display:swap}
+@font-face{font-family:"GK Serif";src:url("notoserifjp-300-screen.woff2") format("woff2");font-weight:300;font-display:swap}
+@font-face{font-family:"GK Serif";src:url("notoserifjp-400-screen.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"GK Serif";src:url("notoserifjp-500-screen.woff2") format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"GK Sans";src:url("notosansjp-300-screen.woff2") format("woff2");font-weight:300;font-display:swap}
+@font-face{font-family:"GK Sans";src:url("notosansjp-400-screen.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"GK Sans";src:url("notosansjp-500-screen.woff2") format("woff2");font-weight:500;font-display:swap}
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<script src="firebase-config.js"></script>
+<script src="firebase.js"></script>
+<script>if('serviceWorker' in navigator){ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }</script>
+
+<style>
+/* Bunpitu：縦書きの原稿を、白いページに上から下へ並べる（色・書体・ツールバーは Hongaki と同じ） */
+:root{
+  --desk:#E6E9E9; --paper:#FCFCFB; --bar:#F5F6F6; --edge:#CDD2D3;
+  --rule:#8E9597; --rule-soft:#D3D7D8; --ink:#1D2224; --muted:#5C6668; --accent:#B23F27; --shu:#C8281E;
+  --sel:rgba(178,63,39,.16); --hit:rgba(214,168,30,.30); --scrim:rgba(20,26,28,.42);
+  --shadow:0 1px 2px rgba(30,38,40,.10),0 6px 18px rgba(30,38,40,.07);
+  --f-text:"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho","YuMincho",serif;
+  --f-ui:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+  --cell:30px; --step:calc(var(--cell)*1.22); --pad:var(--cell);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --desk:#131718; --paper:#1E2325; --bar:#181D1E; --edge:#343C3E;
+  --rule:#737B7E; --rule-soft:#394043; --ink:#E7E4DD; --muted:#98A2A4; --accent:#E5835F; --shu:#F0705A;
+  --sel:rgba(229,131,95,.24); --hit:rgba(232,190,60,.26); --scrim:rgba(0,0,0,.55);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --desk:#131718; --paper:#1E2325; --bar:#181D1E; --edge:#343C3E;
+  --rule:#737B7E; --rule-soft:#394043; --ink:#E7E4DD; --muted:#98A2A4; --accent:#E5835F; --shu:#F0705A;
+  --sel:rgba(229,131,95,.24); --hit:rgba(232,190,60,.26); --scrim:rgba(0,0,0,.55);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3); color-scheme:dark }
+
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* 原稿の書体：明朝体（Noto Serif JP）／ゴシック体（端末に入っているゴシック体） */
+:root{--f-ms:"GK Serif","Hiragino Mincho ProN","Yu Mincho","YuMincho",serif;--f-w:300}
+html.gothic{--f-ms:"GK Sans","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","YuGothic",sans-serif}
+html.wregular{--f-w:400}
+html.wmedium{--f-w:500}
+body{background:var(--desk);color:var(--ink);font-family:var(--f-ui)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bar)}
+
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bar);border-bottom:1px solid var(--edge);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:8px;
+  display:flex;align-items:center;gap:10px}
+#title{flex:0 0 min(17.5em,38vw);min-width:90px;font-family:var(--f-ui);font-size:18px;font-weight:400;background:transparent;border:0;
+  border-bottom:1px solid var(--edge);color:var(--ink);padding:4px 0;text-overflow:ellipsis}
+#title::placeholder{color:var(--muted);font-weight:400}
+#title:focus{outline:none;border-bottom-color:var(--rule)}
+.stats{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:11px;line-height:1.3;color:var(--muted);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.stats b{color:var(--ink);font-weight:700}
+#sSave{font-size:11px}
+#sSave[data-s="err"]{color:var(--accent);font-weight:700}
+
+.tools{flex:1 1 auto;min-width:0;display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none}
+.tools .zoom button{min-width:52px;font-family:var(--f-ui);font-size:13px;font-weight:400}
+.tools .lbl{flex:0 0 auto;font-size:11px;color:var(--muted);margin-right:-2px}
+.tools::-webkit-scrollbar{display:none}
+.tools button,.panel button{flex:0 0 auto;font:inherit;font-size:14px;font-weight:400;min-height:38px;padding:0 12px;border-radius:7px;
+  border:1px solid var(--edge);background:var(--paper);color:var(--ink);cursor:pointer;touch-action:manipulation}
+.tools button.ins{font-family:var(--f-text);font-size:17px;min-width:44px}
+button.danger{color:var(--accent)}
+button.solid{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+.tools button:disabled,.panel button:disabled{opacity:.38;cursor:default}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sep{flex:0 0 1px;align-self:stretch;background:var(--edge);margin:6px 4px}
+.seg{display:flex;flex:0 0 auto;border:1px solid var(--edge);border-radius:7px;overflow:hidden}
+.tools .seg button{border:0;border-radius:0;border-left:1px solid var(--edge);min-width:68px}
+.tools .seg button:first-child{border-left:0}
+.tools .seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+
+.note{font-size:13px;color:var(--muted);line-height:1.6}
+.note b{color:var(--ink)}
+
+html.fit{scroll-snap-type:y proximity;scroll-padding-top:calc(var(--barh,56px) + env(safe-area-inset-top,0px) + 10px)}
+html.fit .page{scroll-snap-align:start}
+main{flex:1 1 auto;min-width:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px 40vh}
+.layout{display:flex;align-items:flex-start}
+#outline{flex:0 0 298px;width:298px;box-sizing:border-box;position:sticky;top:calc(var(--barh,56px) + env(safe-area-inset-top,0px));
+  height:calc(100vh - var(--barh,56px) - env(safe-area-inset-top,0px));overflow:hidden;background:var(--bar);border-right:1px solid var(--edge);
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:10px;padding-block:10px calc(17px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px}
+/* 画面下端の見切れ対策：Safariのツールバー分を除いた、実際に見えている高さで計算する */
+@supports (height:100dvh){#outline{height:calc(100dvh - var(--barh,56px) - env(safe-area-inset-top,0px))}}
+#outline + main{padding-left:16px}
+#outline button{font:inherit;color:var(--ink);cursor:pointer;touch-action:manipulation}
+.tabs{flex:0 0 auto;display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--edge);border-radius:7px;overflow:hidden}
+.tabs button{border:0;border-left:1px solid var(--edge);background:var(--paper);min-height:34px;font-size:13px!important;font-weight:400}
+.tabs button:first-child{border-left:0}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--paper)!important}
+.tab{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.tabhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;padding:0 4px}
+#olList,#pplList,#fList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+#olList button{width:100%;display:grid;grid-template-columns:1.6em 1fr;gap:1px 6px;text-align:left;font-size:12px;
+  background:transparent;border:0;border-radius:6px;padding:6px 6px}
+#olList button:hover,#pplList .pn:hover,#fList button:hover{background:var(--desk)}
+#olList .n{grid-row:1/4;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;padding-top:3px}
+#olList .t{font-family:var(--f-ui);font-size:1em;line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-all}
+#olList .m{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+#olList li.cur button{background:var(--desk)}
+#olList{position:relative}
+#olList li{display:flex;align-items:stretch}
+#olList li>button[data-i]{flex:1 1 auto;min-width:0}
+#olList .grip{flex:0 0 26px;display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:grab;touch-action:none;border-radius:6px;opacity:.55}
+#olList li:hover .grip,#olList li.cur .grip{opacity:1}
+#olList .grip:active{cursor:grabbing}
+#olList li.dragging{opacity:.45}
+#olList .dropline{position:absolute;left:0;right:0;height:2px;background:var(--accent);border-radius:1px;pointer-events:none}
+
+#olList li.cur .t{font-weight:600}
+#olList li.cur .n{color:var(--accent);font-weight:700}
+.fbox{display:flex;flex-direction:column;gap:6px}
+.fbox input{width:100%;box-sizing:border-box;font:inherit;font-family:var(--f-ui);font-size:15px;color:var(--ink);background:var(--paper);
+  border:1px solid var(--edge);border-radius:6px;padding:7px 8px}
+.fbox input:focus{outline:2px solid var(--accent);outline-offset:0}
+.frow{display:flex;gap:6px;align-items:center}
+.rrow{flex-wrap:wrap;margin-top:4px}
+.fbox .fhint{margin:0 0 4px}
+#fList{margin-top:6px}
+.rtools{margin-top:16px;padding-top:12px;border-top:1px solid var(--edge)}
+.rtools .rrow{margin-top:0}
+#rToggle[aria-pressed="true"],.rmode button[aria-pressed="true"]{background:var(--ink)!important;border-color:var(--ink)!important;color:var(--paper)!important}
+.rmode{display:inline-flex;gap:4px}
+.rmode button{font-size:12px!important;min-height:30px!important;padding:0 8px!important}
+#rList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+#rList button{width:100%;display:flex;flex-direction:column;gap:1px;text-align:left;background:transparent;border:0;border-radius:6px;padding:5px 6px}
+#rList button:hover{background:var(--desk)}
+#rList .m{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+#rList .r{font-family:var(--f-ui);font-size:13px;font-weight:600}
+#rList .r small{font-weight:400;color:var(--muted)}
+#rList .s{font-family:var(--f-ui);font-size:12px;line-height:1.45;word-break:break-all}
+#rList mark{background:var(--hit);color:inherit;border-radius:2px}
+#rList .gh{font-family:var(--f-ui);font-size:14px;font-weight:700;padding:8px 6px 2px;border-top:1px solid var(--edge);display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+#rList .gh:first-child{border-top:0}
+#rList .gh .w{font-size:11px;font-weight:700;color:var(--accent)}
+#rList .gh .c{font-size:11px;font-weight:400;color:var(--muted)}
+.frow button{flex:0 0 auto;font-size:13px!important;min-height:32px;padding:0 10px;border:1px solid var(--edge);border-radius:6px;background:var(--paper)}
+.frow button:disabled{opacity:.38;cursor:default}
+#fCount{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto}
+#fList button{width:100%;display:flex;flex-direction:column;gap:1px;text-align:left;background:transparent;border:0;border-radius:6px;padding:5px 6px}
+#fList .m{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+#fList .s{font-family:var(--f-ui);font-size:12px;line-height:1.45;word-break:break-all}
+#fList mark{background:var(--hit);color:inherit;border-radius:2px}
+#fList li.cur button{background:var(--desk)}
+@media (max-width:719px){#outline{display:none}}
+#hits{position:absolute;inset:0;pointer-events:none;z-index:2}
+#hits div{position:absolute;background:var(--hit);border-radius:2px}
+/* 校正：句読点・カギ括弧の重複、カッコの閉じ忘れの箇所に色を付ける（画面だけ） */
+#lint{position:absolute;inset:0;pointer-events:none;z-index:2}
+#lint div{position:absolute;background:var(--lint);box-shadow:inset 0 0 0 1.5px var(--lint-edge);border-radius:3px}
+html.nolint #lint{display:none}
+:root{--lint:rgba(214,58,40,.16);--lint-edge:rgba(214,58,40,.75)}
+#lList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+#lList button{width:100%;display:flex;flex-direction:column;gap:1px;text-align:left;background:transparent;border:0;border-radius:6px;padding:5px 6px}
+#lList button:hover{background:var(--desk)}
+#lList li{display:flex;flex-direction:column}
+/* 右クリックのメニュー */
+#ctxMenu{position:fixed;z-index:60;min-width:168px;padding:5px;background:var(--paper);color:var(--ink);border:1px solid var(--edge);border-radius:9px;box-shadow:0 6px 24px rgba(0,0,0,.18);display:flex;flex-direction:column;font-family:var(--f-ui)}
+#ctxMenu[hidden]{display:none}
+#ctxMenu button{display:flex;align-items:center;gap:8px;text-align:left;border:0;background:transparent;color:inherit;font:inherit;font-size:14px;padding:6px 12px 6px 26px;border-radius:6px;cursor:pointer;position:relative}
+#ctxMenu button:hover:not(:disabled){background:var(--accent);color:#fff}
+#ctxMenu button:disabled{opacity:.38;cursor:default}
+#ctxMenu button[aria-checked="true"]::before{content:"✓";position:absolute;left:9px}
+#ctxMenu hr{border:0;border-top:1px solid var(--edge);margin:4px 6px}
+.lnk{border:0;background:transparent;color:var(--accent);text-decoration:underline;font:inherit;font-size:12px;padding:0;cursor:pointer}
+#lList .lfix{width:auto;align-self:flex-start;margin:0 0 4px 6px;font-size:12px!important;min-height:28px;padding:0 10px;border:1px solid var(--edge);border-radius:6px;background:var(--paper);color:var(--ink)}
+#lList .m{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+#lList .k{font-size:12px;font-weight:700;color:var(--accent)}
+#lList .s{font-family:var(--f-ui);font-size:12px;line-height:1.45;word-break:break-all}
+#lList mark{background:var(--lint);color:inherit;border-radius:2px;box-shadow:inset 0 0 0 1px var(--lint-edge)}
+#sheets{position:relative;display:flex;flex-direction:column;align-items:center;gap:28px;touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
+.page{position:relative;flex:0 0 auto;background:var(--paper);box-shadow:var(--shadow);cursor:text;
+  width:var(--pagew);height:var(--pageh)}
+.pno{position:absolute;left:0;right:0;text-align:center;
+  font-size:max(11px,calc(var(--cell)*.4));color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* 集中モード：ツールバーと左パネルを隠し、原稿だけを表示する */
+/* ツールバーは消さずに、中身だけを隠して細い無地の帯として残す（iPadOS 26 で、上端の帯が消えると画面の上端がぼかされるため） */
+html.focus #outline{display:none}
+html.focus .bar{padding-block:0;height:14px;box-sizing:border-box;overflow:hidden}
+html.focus .bar>*{visibility:hidden}
+/* Mac ではこの問題が起きないので、ツールバーを帯ごと隠す */
+html.focus:not(.ipad) .bar{display:none}
+#bFocusOff{display:none;position:fixed;z-index:30;top:calc(env(safe-area-inset-top,0px) + 10px);right:calc(env(safe-area-inset-right,0px) + 12px);
+  width:38px;height:38px;align-items:center;justify-content:center;padding:0;border:1px solid var(--edge);border-radius:8px;
+  background:var(--paper);color:var(--ink);opacity:.55;cursor:pointer;touch-action:manipulation}
+#bFocusOff:hover{opacity:1}
+#bFocusOff svg{width:18px;height:18px}
+html.focus #bFocusOff{display:inline-flex}
+#topInfo{display:none}
+/* iPadOS 26 のホーム画面のアプリでは、画面の最上部に固定された無地の帯がないと、上端に来た表示がぼかされる。
+   上部に貼り付く作り（sticky）のツールバーでは、無地の帯として扱われない端末があるため、iPadのアプリではツールバーを画面の最上部に固定し、
+   その高さの分だけ原稿を下げる */
+html.ipadapp{padding-top:0}
+html.ipadapp .bar{position:fixed;top:0;left:0;right:0}
+html.ipadapp header.bar{padding-top:calc(env(safe-area-inset-top,0px) + 8px + max(0px, 22px - env(safe-area-inset-top,0px)))}
+html.ipadapp.focus header.bar{padding-top:0;height:calc(env(safe-area-inset-top,0px) + 14px + max(0px, 26px - env(safe-area-inset-top,0px)))}
+html.ipadapp body{padding-top:var(--barh,56px)}
+html.ipadapp .stats{display:none}
+html.ipadapp #topInfo{display:flex;align-items:center;gap:12px;position:absolute;top:env(safe-area-inset-top,0px);left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));
+  height:calc(4px + max(0px, 22px - env(safe-area-inset-top,0px)));font-size:11px;line-height:1.2;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none}
+html.ipadapp #topInfo b{color:var(--ink);font-weight:700}
+#tiLeft,#tiRight{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#tiRight{text-align:right}
+#tiScene{flex:0 1 auto;max-width:44%;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+html.focus.ipad #bFocusOff{top:calc(env(safe-area-inset-top,0px) + 22px)}
+/* iPadのホーム画面のアプリでは、画面の最上部（時計などが出る帯）をクリック・タップすると、iPadが原稿をいちばん上までスクロールする。
+   ツールバーのボタンの上の端がこの帯にかかっていたため、ボタンを押したつもりでも上に飛ぶことがあった。ボタンをこの帯より下に下げる */
+@media (display-mode: standalone){
+  /* ボタンの上の端を、画面の上から30pxの位置にする（24pxでは上の端を押すと飛んだ。下の余白は8pxから6pxに詰める） */
+  html.ipad .bar{padding-top:calc(8px + max(0px, 22px - env(safe-area-inset-top,0px)));padding-bottom:6px}
+  html.ipad.focus .bar{height:calc(14px + max(0px, 26px - env(safe-area-inset-top,0px)))}
+  html.ipad.focus #bFocusOff{top:calc(max(26px, env(safe-area-inset-top,0px)) + 22px)}
+}
+
+.ch{position:absolute;width:var(--cell);height:var(--cell);
+  right:calc(var(--padx,var(--pad)) + var(--c)*var(--step));top:calc(var(--pad) + var(--r)*var(--cell));
+  writing-mode:vertical-rl;text-orientation:mixed;display:flex;align-items:center;justify-content:center;
+  font-family:var(--f-ms);font-weight:var(--f-w);font-size:calc(var(--cell)*.78*var(--fs,1));line-height:1;color:var(--ink);pointer-events:none}
+.ch.up{text-orientation:upright}
+.ch.two{font-size:calc(var(--cell)*.5*var(--fs,1))}
+.ruby{position:absolute;pointer-events:auto;cursor:pointer;z-index:4;right:calc(var(--padx,var(--pad)) + var(--c)*var(--step) - var(--cell)*.21);
+  top:calc(var(--pad) + var(--r)*var(--cell));width:calc(var(--cell)*.36);height:calc(var(--n)*var(--cell));
+  display:flex;flex-direction:column;align-items:center;justify-content:space-around;
+  font-family:var(--f-ms);font-weight:var(--f-w);font-size:calc(var(--cell)*.3);line-height:1.08;color:var(--ink)}
+.ruby.dense{justify-content:center}
+.ruby::before{content:"";position:absolute;inset:0 calc(var(--cell)*-.08)}
+.ruby span{display:block;writing-mode:vertical-rl;text-orientation:mixed}
+.ch.rot{display:block;height:calc(var(--cell)*var(--k));overflow:visible}
+.ch.rot>span{position:absolute;left:0;width:var(--cell);top:calc(var(--cell)*var(--o));height:calc(var(--cell)*.5);display:flex;align-items:center;justify-content:center;
+  writing-mode:vertical-rl;text-orientation:mixed;white-space:pre;line-height:1;letter-spacing:0;font-size:calc(var(--cell)*.74*var(--fs,1))}
+.ch.rot i{font-style:normal;display:inline-block;transform:scaleY(var(--sy,1))}
+.ch.tcy span{writing-mode:horizontal-tb;display:inline-block;white-space:nowrap;line-height:1;letter-spacing:0;transform:scaleX(var(--sx,1))}
+
+#sel{position:absolute;inset:0;pointer-events:none;z-index:3}
+#sel div{position:absolute;background:var(--sel);border-radius:2px}
+#caret{position:absolute;z-index:5;height:2px;width:calc(var(--cell)*.84);background:var(--accent);pointer-events:none;opacity:.55}
+#caret.on{opacity:1;animation:blink 1.05s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion: reduce){#caret.on{animation:none}}
+
+#ta{position:absolute;z-index:6;writing-mode:horizontal-tb;border:0;padding:0;margin:0;resize:none;overflow:hidden;
+  background:transparent;color:transparent;caret-color:transparent;outline:none;pointer-events:none;
+  font-family:var(--f-ms);font-weight:var(--f-w);font-size:max(16px,calc(var(--cell)*.78*var(--fs,1)));line-height:1.3;
+  -webkit-user-select:text;user-select:text}
+/* iPad：入力欄の文字色を透明にすると、選択中の変換候補まで透明になる。入力欄は普通の色で見せ（確定のたび空に戻る）、カーソルもiPad標準のものを使う */
+html.ipad #ta{writing-mode:vertical-rl;line-height:var(--step);color:var(--ink);caret-color:var(--ink);
+  /* 変換中の文字も原稿と同じ1字1マスの間隔で並べる */
+  --taf:max(16px,calc(var(--cell)*.78*var(--fs,1)));letter-spacing:calc(var(--cell) - var(--taf));padding-top:calc((var(--cell) - var(--taf))/2)}
+html.ipad #caret{display:none}
+#ta.clip{color:transparent!important}
+html.ipad #ta.composing{background:var(--paper);color:var(--ink)}
+#ime{position:absolute;z-index:7;min-width:var(--cell);writing-mode:vertical-rl;text-orientation:mixed;white-space:pre-wrap;line-break:anywhere;word-break:break-all;pointer-events:none;
+  font-family:var(--f-ms);font-weight:var(--f-w);font-size:calc(var(--cell)*.78*var(--fs,1));line-height:var(--cell);letter-spacing:calc(var(--cell) - var(--cell)*.78*var(--fs,1));
+  color:var(--ink);text-decoration:underline;text-decoration-color:var(--accent)}
+#ime span{background:var(--paper)}   /* 文字のところだけ紙の色で塗り、残りのマス目は見えるようにする */
+
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;
+  background:var(--ink);color:var(--paper);font-size:14px;padding:10px 16px;border-radius:8px;pointer-events:none;max-width:calc(100% - 32px)}
+
+.scrim{position:fixed;inset:0;z-index:50;background:var(--scrim);display:flex;align-items:flex-start;justify-content:center;
+  padding-top:calc(env(safe-area-inset-top,0px) + 24px);padding-bottom:24px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.panel{background:var(--paper);color:var(--ink);border-radius:12px;width:min(600px,100%);max-height:calc(100vh - 64px);overflow:auto;
+  display:flex;flex-direction:column;gap:16px;padding:20px;box-shadow:var(--shadow);box-sizing:border-box}
+.panel h2{margin:0;font-family:var(--f-ui);font-size:22px;font-weight:600}
+.phead{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.pgroup{display:flex;flex-direction:column;gap:8px}
+.pgroup h3{margin:0;font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.pbtns{display:flex;flex-wrap:wrap;gap:8px}
+.panel.wide{width:min(860px,100%)}
+#cmpBody{display:flex;flex-direction:column;gap:12px}
+#cmpBody .hunk{border:1px solid var(--edge);border-radius:8px;overflow:hidden}
+#cmpBody .hh{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;background:var(--desk);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+#cmpBody .hh button{min-height:28px;padding:0 10px}
+#cmpBody .cl{padding:4px 12px;font-family:var(--f-text);font-size:14px;line-height:1.75;white-space:pre-wrap;word-break:break-all}
+#cmpBody .cl.eq{color:var(--muted)}
+#cmpPanel ins{text-decoration:underline;text-decoration-color:#2E8B57;text-decoration-thickness:2px;background:rgba(46,139,87,.16);color:var(--ink)}
+#cmpPanel del{text-decoration:line-through;text-decoration-color:#C8281E;background:rgba(200,40,30,.14);color:var(--ink)}
+.cmpsum{font-size:13px;color:var(--ink)}
+#histList,#histDead{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--edge);border-radius:8px;overflow:hidden}
+#histList li+li,#histDead li+li{border-top:1px solid var(--edge)}
+#histList button[data-k],#histDead button{width:100%;border:0;border-radius:0;min-height:52px;padding:8px 14px;text-align:left;display:flex;flex-direction:column;gap:2px;background:var(--paper)}
+#histList .t,#histDead .t{font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums}
+#histList .m,#histDead .m{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+#histList li.sel button[data-k]{background:var(--desk)}
+#histList .hdet{padding:10px 14px 12px;display:flex;flex-direction:column;gap:10px;background:var(--desk)}
+#histList .hprev{font-family:var(--f-text);font-size:14px;line-height:1.7;color:var(--ink);max-height:8.5em;overflow:hidden}
+#histList .hnone{padding:12px 14px}
+#docList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--edge);border-radius:8px;overflow:hidden}
+#docList li+li{border-top:1px solid var(--edge)}
+#docList button{width:100%;border:0;border-radius:0;min-height:56px;padding:10px 14px;text-align:left;display:grid;
+  grid-template-columns:1fr auto;gap:2px 12px;align-items:center;background:var(--paper)}
+#docList .t{font-family:var(--f-text);font-size:17px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#docList .m{grid-column:1;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+#docList .chip{grid-row:1/3;grid-column:2;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--ink);color:var(--paper)}
+#docList li.cur button{background:var(--desk)}
+.small{font-size:12px;color:var(--muted);line-height:1.6}
+.chk{display:flex;align-items:center;gap:10px;font-size:15px;min-height:28px;cursor:pointer}
+.pgroup .chk+.chk{margin-top:-4px}   /* チェック項目どうしの間を詰める */
+.pgroup h3+.chk{margin-top:-4px}   /* 見出しとチェック項目の間を、ボタンのときと同じ見た目の間隔にする */
+.chk input{width:20px;height:20px;accent-color:var(--accent);margin:0}
+html.nopno .pno{display:none}
+#fbText{width:100%;min-height:40vh;font-family:var(--f-text);font-size:16px;background:var(--desk);color:var(--ink);border:1px solid var(--edge);border-radius:6px;padding:8px;box-sizing:border-box}
+
+#sizeSel button{min-width:64px}
+#sizeSel button[aria-pressed="true"],#themeSel button[aria-pressed="true"],#fontSel button[aria-pressed="true"],#weightSel button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+
+
+.nbox{display:flex;flex-direction:column;gap:4px}
+.nbox label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;padding:0 2px}
+.nbox textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:6.4em;font:inherit;font-size:13px;line-height:1.55;color:var(--ink);
+  background:var(--paper);border:1px solid var(--edge);border-radius:6px;padding:7px 9px}
+.nbox textarea:focus{outline:2px solid var(--accent);outline-offset:0}
+#tabNotes{gap:10px;padding-bottom:8px}
+.rbbase{font-family:var(--f-ms);font-size:20px;padding:2px 2px 6px}
+.rbread{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--edge);border-radius:7px;background:var(--paper);color:var(--ink);width:100%;box-sizing:border-box}
+.tools button.ico{min-width:44px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center}
+.tools button.ico svg{display:block}
+.tools button.pg{min-width:36px;padding:0 6px}
+/* 上のボタンは、左パネルのタブと同じ大きさ（高さ34px・文字13px）にそろえる */
+.tools button{min-height:34px;font-size:13px}
+.panel button{font-size:13px}   /* 「外見」「その他」のパネルのボタンも13pxにそろえる */
+.tools .seg button{min-width:64px}
+.tools button.ico{min-width:40px}
+.tools button.ico svg{width:18px;height:18px}
+.tools button.pg{min-width:34px;padding:0 5px}
+/* 幅の狭い画面では、題名の欄とボタンを少し詰めて、ページ送りのボタンまで見えるようにする */
+@media (max-width:1240px){
+  #title{flex-basis:min(17.5em,22vw)}
+  .tools{gap:4px}
+  .tools button{padding:0 9px}
+  .tools .seg button{min-width:52px}
+  .tools button.ico{min-width:38px;padding:0 7px}
+  .tools button.pg{min-width:34px;padding:0 5px}
+  .sep{margin:6px 2px}
+}
+@media (max-width:1100px){ #title{flex-basis:16vw} html:not(.ipadapp) #title{flex-basis:11vw;min-width:80px} }
+/* メモの箱は、パネルの残りの高さいっぱいに広げる（画面の大きさに合わせて伸び縮み） */
+#plotBox{flex:1 1 auto;min-height:0}
+#nt-plot{flex:1 1 auto;min-height:12em;resize:none}
+#castBox{margin-bottom:18px}
+#pplHelp{margin:0 0 4px}
+#rHelp{margin:0}
+.tabhead.ttl{padding:0 2px}
+.tabhead .lbl{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em}
+#nt-cast{min-height:10.3em}
+.clink{margin-left:8px;font-weight:400;letter-spacing:0;color:var(--muted)}   /* 人物一覧だけ、ほかの欄より約2.5行分高く */
+/* ---------- Bunpitu ---------- */
+.page{width:var(--pagew);height:var(--pageh);contain:strict}   /* ページの中の字を描き直しても、ほかのページの計算をしない */
+.pno{top:calc(var(--pad) + var(--cell)*(var(--rows) + .9))}
+.ch.hd{font-weight:500}
+html.wmedium .ch.hd{font-weight:500;-webkit-text-stroke:.03em currentColor}
+/* 傍点：字の右側に点を打つ */
+.dot{position:absolute;pointer-events:none;z-index:3;right:calc(var(--padx,var(--pad)) + var(--c)*var(--step) - var(--cell)*.33);
+  top:calc(var(--pad) + var(--r)*var(--cell));width:calc(var(--cell)*.3);height:var(--cell);display:flex;align-items:center;justify-content:center;
+  writing-mode:vertical-rl;font-family:var(--f-ms);font-size:calc(var(--cell)*.32);line-height:1;color:var(--ink)}
+/* 人物 */
+#pplList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0;position:relative}
+#pplList li{display:flex;align-items:flex-start;gap:4px;padding:8px 0;border-bottom:1px solid var(--edge)}
+#pplList li.dragging{opacity:.45}
+#pplList .dropline{position:absolute;left:0;right:0;height:2px;background:var(--accent);border-radius:1px;pointer-events:none}
+#pplList .pf{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px}
+#pplList .pnm{font-family:var(--f-ui);font-size:15px;font-weight:600;color:var(--ink);background:transparent;border:0;border-bottom:1px solid transparent;border-radius:0;padding:4px 2px}
+#pplList .pnm:focus{outline:none;border-bottom-color:var(--rule)}
+#pplList .pnm::placeholder,#pplList .ppr::placeholder{color:var(--muted);font-weight:400}
+#pplList .ppr{width:100%;box-sizing:border-box;resize:none;overflow:hidden;font-family:var(--f-ui);font-size:13px;line-height:1.6;color:var(--ink);
+  background:var(--paper);border:1px solid var(--edge);border-radius:6px;padding:6px 8px;min-height:44px}
+#pplList .ppr:focus{outline:2px solid var(--accent);outline-offset:0}
+#pplList .pside{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:4px}
+#pplList .grip{width:26px;height:26px;display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:grab;touch-action:none;border-radius:6px;opacity:.7}
+#pplList .grip:active{cursor:grabbing}
+#pplList .pdel{min-width:26px;height:26px;padding:0 4px;display:flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:transparent;color:var(--muted);font-family:var(--f-ui);font-size:11px;cursor:pointer}
+#pplList .pdel:hover{background:var(--desk);color:var(--accent)}
+#pplList .pdel.arm{background:var(--accent);color:var(--paper);font-weight:700}
+#tabPeople .pbtns{margin-top:10px}
+.addp{font:inherit;font-size:13px;min-height:34px;padding:0 12px;border-radius:7px;border:1px solid var(--edge);background:var(--paper);color:var(--ink);cursor:pointer}
+/* 外見：字詰め */
+.nrow{display:flex;flex-wrap:wrap;gap:20px}
+.num{display:flex;align-items:center;gap:8px;font-size:15px}
+.num input{width:72px;box-sizing:border-box;font:inherit;font-size:16px;text-align:right;color:var(--ink);background:var(--paper);border:1px solid var(--edge);border-radius:6px;padding:7px 8px;font-variant-numeric:tabular-nums}
+.num input:focus{outline:2px solid var(--accent);outline-offset:0}
+#lhSel button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+#lhSel button{min-width:64px}
+#tabNotes{gap:10px;padding-bottom:8px}
+#plotBox{flex:1 1 auto;min-height:0}
+#nt-memo{flex:1 1 auto;min-height:12em;resize:none}
+/* ページのまわりの灰色の幅を、上下左右とページのあいだでそろえる */
+main{padding-left:max(var(--gap,16px),env(safe-area-inset-left,0px));padding-right:max(var(--gap,16px),env(safe-area-inset-right,0px));padding-block:var(--gap,16px) 40vh}
+#outline + main{padding-left:var(--gap,16px)}
+#sheets{gap:var(--gap,16px)}
+html.fit{scroll-padding-top:calc(var(--barh,56px) + env(safe-area-inset-top,0px) + var(--gap,16px))}
+/* ---------- ウェブアプリ版：同期のログインと、同期の確認中の表示（Hongaki と同じ） ---------- */
+.sybox{display:flex;flex-direction:column;gap:8px}
+.sybox input{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--edge);border-radius:7px;background:var(--paper);color:var(--ink)}
+.sybox input:focus{outline:2px solid var(--accent);outline-offset:0}
+#syFields{display:flex;flex-direction:column;gap:8px}
+#syFields:empty{display:none}
+.small.err{color:var(--accent)}
+html.syncwait .tools,html.syncwait main,html.syncwait #outline{pointer-events:none}
+html.syncwait main{opacity:.55;transition:opacity .2s .4s}
+html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄くする表示が上端のぼかしのきっかけになることがあるため使わない */
+</style>
+</head>
+<body>
+<script>try{ const t=localStorage.getItem('bunpitu-theme'); if(t==='light'||t==='dark') document.documentElement.setAttribute('data-theme',t); if(localStorage.getItem('bunpitu-font')==='gothic') document.documentElement.classList.add('gothic'); if(localStorage.getItem('bunpitu-weight')==='regular') document.documentElement.classList.add('wregular'); if(localStorage.getItem('bunpitu-weight')==='medium') document.documentElement.classList.add('wmedium'); if(localStorage.getItem('bunpitu-focus')==='1') document.documentElement.classList.add('focus'); }catch(e){}</script>
+
+<header class="bar">
+  <input id="title" type="text" placeholder="題名（未設定）" autocomplete="off" spellcheck="false" aria-label="題名">
+  <div class="tools" id="tools">
+    <div class="seg" role="group" aria-label="段落の書式">
+      <button type="button" data-type="body" aria-pressed="false" title="本文（⌘1）">本文</button>
+      <button type="button" data-type="head" aria-pressed="false" title="見出し（⌘2）">見出し</button>
+    </div>
+    <button id="bRuby" type="button" disabled title="選んだ文字にルビを付ける">ルビ</button>
+    <button id="bEmph" type="button" disabled title="選んだ文字に傍点を付ける">傍点</button>
+    <span class="sep"></span>
+    <button id="bUndo" class="ico" type="button" disabled aria-label="元に戻す" title="元に戻す"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+    <button id="bRedo" class="ico" type="button" disabled aria-label="やり直す" title="やり直す"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+    <span class="sep"></span>
+    <button id="bMan" type="button">原稿</button>
+    <button id="bLook" type="button">外見</button>
+    <button id="bDocs" type="button">その他</button>
+    <span class="sep"></span>
+    <button id="pgUp1" class="ico pg" type="button" aria-label="1ページ戻る" title="1ページ戻る"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg></button>
+    <button id="pgUp10" class="ico pg" type="button" aria-label="10ページ戻る" title="10ページ戻る"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12 6-6 6 6"/><path d="m6 18 6-6 6 6"/></svg></button>
+    <button id="pgDn1" class="ico pg" type="button" aria-label="1ページ進む" title="1ページ進む"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+    <button id="pgDn10" class="ico pg" type="button" aria-label="10ページ進む" title="10ページ進む"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 6 6 6 6-6"/><path d="m6 12 6 6 6-6"/></svg></button>
+    <span class="sep"></span>
+    <button id="bFocus" class="ico" type="button" aria-label="集中モード（原稿だけを表示）" title="集中モード（原稿だけを表示）"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></svg></button>
+  </div>
+  <div id="topInfo"><span id="tiLeft"></span><span id="tiScene"></span><span id="tiRight"></span></div>
+  <div class="stats" aria-live="polite">
+    <span>原稿用紙換算<b id="sMai">0</b>枚・<b id="sNet">0</b>文字（字下げ込み<b id="sAll">0</b>文字）</span>
+    <span id="sLine2"><span id="sSel" hidden>選択中 <b id="sSelNet">0</b>文字（字下げ込み<b id="sSelAll">0</b>文字）・</span><span id="sSave">接続中…</span></span>
+  </div>
+</header>
+
+<div class="layout">
+<aside id="outline" aria-label="サイドパネル">
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" data-tab="toc" aria-selected="true">目次</button>
+    <button type="button" role="tab" data-tab="people" aria-selected="false">人物</button>
+    <button type="button" role="tab" data-tab="notes" aria-selected="false">メモ</button>
+    <button type="button" role="tab" data-tab="lint" aria-selected="false">校正</button>
+    <button type="button" role="tab" data-tab="find" aria-selected="false">検索</button>
+  </div>
+
+  <section class="tab" id="tabToc">
+    <div class="tabhead"><span id="olCount"></span><span>ドラッグで並べ替え</span></div>
+    <ol id="olList"></ol>
+    <p class="small" id="olEmpty" hidden>見出しはまだありません。段落を「見出し」にすると、ここに目次として並びます。見出しを押すとその位置に移り、つまみをドラッグすると、次の見出しまでの本文ごと並べ替えられます。</p>
+  </section>
+
+  <section class="tab" id="tabPeople" hidden>
+    <div class="tabhead"><span id="pplCount"></span><span>ドラッグで並べ替え</span></div>
+    <ul id="pplList"></ul>
+    <div class="pbtns"><button id="pplAdd" type="button" class="addp">人物を追加</button></div>
+  </section>
+
+  <section class="tab" id="tabNotes" hidden>
+    <div class="nbox" id="plotBox"><textarea id="nt-memo" data-key="memo" aria-label="メモ" placeholder="この原稿のメモ"></textarea></div>
+  </section>
+
+  <section class="tab" id="tabLint" hidden>
+    <div class="tabhead"><span id="lCount"></span><span class="small">原稿の順</span></div>
+    <p class="small">句読点やカギ括弧の重複、閉じていないカッコ、半角の空白、ルビ・傍点の記号の誤り、段落の頭の字下げ漏れを表示します。</p>
+    <ol id="lList"></ol>
+    <p class="small" id="lEmpty" hidden>誤りは見つかりません。</p>
+    <p class="small" id="lIgn" hidden><span id="lIgnN"></span>　<button type="button" id="lIgnReset" class="lnk">すべて知らせるように戻す</button></p>
+  </section>
+  <section class="tab" id="tabFind" hidden>
+    <div class="fbox">
+      <input id="fQ" type="text" placeholder="検索する語句" autocomplete="off" spellcheck="false" aria-label="検索する語句">
+      <div class="frow"><button id="fPrev" type="button">前へ</button><button id="fNext" type="button">次へ</button><span id="fCount"></span></div>
+      <input id="fR" type="text" placeholder="置換後の語句" autocomplete="off" spellcheck="false" aria-label="置換後の語句">
+      <div class="frow"><button id="fRep" type="button">置換</button><button id="fAll" type="button">すべて置換</button></div>
+      <p class="small fhint">Enterで次へ、Shift＋Enterで前へ。Escで原稿に戻ります。</p>
+    </div>
+    <ol id="fList"></ol>
+    <div class="fbox rtools">
+      <div class="frow rrow">
+        <button id="rToggle" type="button" aria-pressed="false">ルビの一覧</button>
+        <span class="pbtns rmode" id="rMode" role="group" aria-label="並べ方" hidden>
+          <button type="button" data-rm="order" aria-pressed="true">原稿の順</button>
+          <button type="button" data-rm="base" aria-pressed="false">親文字ごと</button>
+        </span>
+      </div>
+      <p class="small" id="rHelp">ルビを付けた箇所を一覧にします。「親文字ごと」では同じ親文字のルビをまとめ、読みが違うものを知らせます。</p>
+    </div>
+    <div id="rBox" hidden>
+      <div class="tabhead"><span id="rCount"></span></div>
+      <ol id="rList"></ol>
+      <p class="small" id="rEmpty" hidden>ルビを付けた箇所はありません。</p>
+    </div>
+  </section>
+</aside>
+<main>
+  <div id="sheets">
+    <div id="hits"></div>
+    <div id="lint"></div>
+    <div id="sel"></div>
+    <div id="caret"></div>
+    <div id="ime" hidden></div>
+    <textarea id="ta" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="本文入力"></textarea>
+  </div>
+</main>
+</div>
+
+<button id="bFocusOff" type="button" aria-label="集中モードを終える" title="集中モードを終える"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4"/><path d="M15 4v5h5"/><path d="M9 20v-5H4"/><path d="M15 20v-5h5"/></svg></button>
+<div class="scrim" id="docsPanel" hidden>
+  <div class="panel" role="dialog" aria-labelledby="docsTitle">
+    <div class="phead"><h2 id="docsTitle">その他</h2><button id="pClose" type="button">閉じる</button></div>
+    <div class="pgroup">
+      <h3>書き出し</h3>
+      <div class="pbtns">
+        <button id="pTxt" type="button">テキストで書き出す</button>
+        <button id="pCopy" type="button">本文をコピー</button>
+      </div>
+      <div class="small" id="exportNote">テキストでは、ルビを「親文字（よみ）」の形にし、傍点の記号は外します。iPadでは共有の画面が開くので、「“ファイル”に保存」などを選んでください。</div>
+    </div>
+    <div class="pgroup">
+      <h3>書き方</h3>
+      <div class="small">ルビは「｜親文字《よみ》」、傍点は「《《傍点を付ける文字》》」の形で原稿に入ります。この形を直接入力しても、ルビや傍点になります。文字数と原稿用紙換算の枚数には、改行とこれらの記号・読み仮名は入りません。</div>
+    </div>
+    <div class="pgroup" id="syncGroup">
+      <h3>同期（MacとiPadの間）</h3>
+      <div class="small" id="syncOff" hidden>同期の設定（firebase-config.js）がまだのため、原稿はこの端末にだけ保存されます。</div>
+      <div id="syncOut" class="sybox" hidden>
+        <div class="small">Hongaki・Kouseiと同じメールアドレスとパスワードでログインすると、MacとiPadの間で原稿が自動で同期されます。</div>
+        <div id="syFields"></div>
+        <div class="pbtns">
+          <button id="syLogin" type="button" class="solid">ログイン</button>
+          <button id="sySignup" type="button">新規登録</button>
+          <button id="syForgot" type="button">パスワードを忘れた</button>
+        </div>
+        <div class="small err" id="syMsg" role="status"></div>
+      </div>
+      <div id="syncIn" class="sybox" hidden>
+        <div class="small">ログイン中：<b id="syEmail"></b><br>最後に同期した日時：<span id="syLast"></span></div>
+        <div class="pbtns">
+          <button id="syNow" type="button">今すぐ同期</button>
+          <button id="syLogout" type="button">ログアウト</button>
+        </div>
+      </div>
+    </div>
+    <div class="small">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
+    <div class="small">Version 0.04</div>
+  </div>
+</div>
+<div class="scrim" id="manPanel" hidden>
+  <div class="panel" role="dialog" aria-labelledby="manTitle">
+    <div class="phead"><h2 id="manTitle">原稿</h2><button id="mpClose" type="button">閉じる</button></div>
+    <div class="pgroup" id="docsGroup">
+      <h3>保存した原稿</h3>
+      <div class="pbtns">
+        <button id="pNew" type="button">新しい原稿</button>
+        <button id="pImport" type="button">テキストを読み込む</button>
+      </div>
+      <ul id="docList"></ul>
+      <div class="pbtns">
+        <button id="pHist" type="button">以前の版</button>
+        <button id="pDelete" type="button" class="danger">この原稿を削除</button>
+        <span class="pbtns" id="pDelConfirm" hidden>
+          <button id="pDelYes" type="button" class="solid">削除する</button>
+          <button id="pDelNo" type="button">やめる</button>
+        </span>
+      </div>
+      <div class="small">原稿はこの端末の中に保存され、ログインしていれば同期用のサーバー（Firebase）にも送られます。読み込んだテキストは新しい原稿として追加され、「第一章」「プロローグ」などで始まる行は見出しになります。人物とメモはテキストには書き出されません。</div>
+    </div>
+    <div class="pgroup">
+      <h3>バックアップ</h3>
+      <div class="pbtns">
+        <button id="pBackup" type="button">すべての原稿をバックアップ</button>
+        <button id="pRestore" type="button">バックアップから読み込む</button>
+      </div>
+      <div class="small">人物とメモも含めて、すべての原稿を1つのファイル（.json）に保存します。読み込むと、原稿が追加されます（同じ内容の原稿は追加しません）。</div>
+    </div>
+      </div>
+</div>
+<div class="scrim" id="histPanel" hidden>
+  <div class="panel" role="dialog" aria-labelledby="histTitle">
+    <div class="phead"><h2 id="histTitle">以前の版</h2><button id="hClose" type="button">閉じる</button></div>
+    <div class="pgroup">
+      <h3 id="histHead"></h3>
+      <div class="pbtns"><button id="hBack" type="button" hidden>この原稿の版を見る</button></div>
+      <ul id="histList"></ul>
+      <div class="small">この端末の中に、原稿を開いたとき・別の端末の変更を受け取る前・書いている途中（30分ごと）に自動で残します。残すのは直近の5件と、それより前は30日分を1日1件です。版を選んで「この版に戻す」を押すと、原稿がその版の内容に置き換わります。戻す前の状態も版として残るので、元に戻したくなったときは、その版を選び直してください。</div>
+    </div>
+    <div class="pgroup" id="histDeadG" hidden>
+      <h3>削除された原稿</h3>
+      <ul id="histDead"></ul>
+    </div>
+  </div>
+</div>
+<div class="scrim" id="cmpPanel" hidden>
+  <div class="panel wide" role="dialog" aria-labelledby="cmpTitle">
+    <div class="phead"><h2 id="cmpTitle">版の比較</h2><button id="cmpClose" type="button">閉じる</button></div>
+    <div class="pgroup">
+      <h3 id="cmpHead"></h3>
+      <div class="small cmpsum" id="cmpSum"></div>
+      <div class="small"><ins>緑の下線</ins>は今の原稿で増えた部分、<del>赤の取り消し線</del>は今の原稿で消えた部分です。「この場所へ」を押すと、今の原稿のその箇所に移ります。</div>
+    </div>
+    <div id="cmpBody"></div>
+  </div>
+</div>
+<div class="scrim" id="lookPanel" hidden>
+  <div class="panel" role="dialog" aria-labelledby="lookTitle">
+    <div class="phead"><h2 id="lookTitle">外見</h2><button id="lpClose" type="button">閉じる</button></div>
+    <div class="pgroup">
+      <h3>字詰め（この端末）</h3>
+      <div class="nrow">
+        <label class="num">1行<input id="lkRows" type="number" min="10" max="60" step="1" inputmode="numeric" aria-label="1行の字数">字</label>
+        <label class="num">1ページ<input id="lkPer" type="number" min="4" max="60" step="1" inputmode="numeric" placeholder="自動" aria-label="1ページの行数">行</label>
+      </div>
+      <div class="small" id="lkNote"></div>
+    </div>
+    <div class="pgroup">
+      <h3>行間（この端末）</h3>
+      <div class="pbtns" id="lhSel" role="group" aria-label="行間">
+        <button type="button" data-lh="1.6" aria-pressed="false">狭め</button>
+        <button type="button" data-lh="1.75" aria-pressed="false">標準</button>
+        <button type="button" data-lh="1.9" aria-pressed="false">広め</button>
+      </div>
+    </div>
+    <div class="pgroup">
+      <h3>書体と太さ</h3>
+      <div class="pbtns" id="fontSel" role="group" aria-label="書体">
+        <button type="button" data-font="mincho" aria-pressed="false">明朝体</button>
+        <button type="button" data-font="gothic" aria-pressed="false">ゴシック体</button>
+      </div>
+      <div class="pbtns" id="weightSel" role="group" aria-label="文字の太さ">
+        <button type="button" data-weight="light" aria-pressed="false">細め</button>
+        <button type="button" data-weight="regular" aria-pressed="false">標準</button>
+        <button type="button" data-weight="medium" aria-pressed="false">太め</button>
+      </div>
+    </div>
+    <div class="pgroup">
+      <h3>ページ番号</h3>
+      <label class="chk"><input type="checkbox" id="pPno" checked> ページ番号を表示する</label>
+    </div>
+    <div class="pgroup">
+      <h3>校正</h3>
+      <label class="chk"><input type="checkbox" id="pLint" checked> 「校正」タブで見つかった箇所に色を付ける</label>
+    </div>
+    <div class="pgroup">
+      <h3>配色</h3>
+      <div class="pbtns" id="themeSel" role="group" aria-label="配色">
+        <button type="button" data-theme="auto" aria-pressed="false">端末の設定に合わせる</button>
+        <button type="button" data-theme="light" aria-pressed="false">ライト</button>
+        <button type="button" data-theme="dark" aria-pressed="false">ダーク</button>
+      </div>
+    </div>
+    <div class="small">外見の設定は、この端末に記憶されます。</div>
+  </div>
+</div>
+<div class="scrim" id="rubyPanel" hidden>
+  <div class="panel" role="dialog" aria-labelledby="rubyTitle">
+    <div class="phead"><h2 id="rubyTitle">ルビ</h2><button id="rbClose" type="button">閉じる</button></div>
+    <div class="pgroup">
+      <h3>ルビを付ける文字</h3>
+      <div id="rbBase" class="rbbase"></div>
+      <h3>読み</h3>
+      <input id="rbRead" type="text" autocomplete="off" spellcheck="false" aria-label="読み" class="rbread">
+      <div class="pbtns">
+        <button id="rbOk" type="button" class="solid">ルビを付ける</button>
+        <button id="rbDel" type="button" hidden>ルビを外す</button>
+      </div>
+      <div class="small">原稿には「｜親文字《よみ》」の形で入ります。付けたルビは、読みの部分を押すと、ここで直したり外したりできます。</div>
+    </div>
+  </div>
+</div>
+<input type="file" id="fileIn" accept=".txt,text/plain" hidden>
+<input type="file" id="jsonIn" accept=".json,application/json" hidden>
+
+<div class="scrim" id="fallback" hidden><div class="panel">
+  <div class="note">自動コピーできませんでした。下のテキストを選択してコピーしてください。</div>
+  <textarea id="fbText" readonly></textarea>
+  <div class="pbtns"><button id="fbClose" type="button">閉じる</button></div>
+</div></div>
+<div id="ctxMenu" role="menu" hidden>
+  <button type="button" role="menuitem" data-act="cut">カット</button>
+  <button type="button" role="menuitem" data-act="copy">コピー</button>
+  <button type="button" role="menuitem" data-act="paste">ペースト</button>
+  <hr>
+  <button type="button" role="menuitem" data-act="ruby">ルビ…</button>
+  <button type="button" role="menuitem" data-act="emph">傍点</button>
+  <hr>
+  <button type="button" role="menuitemradio" data-act="body">本文</button>
+  <button type="button" role="menuitemradio" data-act="head">見出し</button>
+</div>
+<div id="toast" hidden></div>
+
+<script>
+(function(){
+/* Bunpitu：小説・エッセイなどの縦書きエディタ。入力・保存・以前の版の仕組みは Hongaki と同じ */
+const S='​', PART=30000;
+const KROWS=20, KPER=20;   /* 原稿用紙換算：20字×20行 */
+const HANG=new Set([...'、。，．,.」』）〕】〉》］｝”’)]']);
+const ASC=/^[\x21-\x7E]$/;
+const NAMES={body:'本文',head:'見出し'};
+const CODE={body:'b',head:'h'}, DECODE={b:'body',h:'head'};
+/* テキストを読み込むとき・貼り付けるとき、この形で始まる行は見出しにする */
+const HEADRE=/^[　 ]*(第[一二三四五六七八九十百千〇零0-9０-９]+[章話部節幕]|プロローグ|エピローグ|序章|終章)/;
+const SAMPLE_TITLE='春の切符（仮）';
+const SAMPLE=[
+'第一章　雨の駅',
+'　駅舎の屋根を叩く雨の音が、いつもより低く聞こえた。',
+'　改札の向こうに、祖母が傘を二本抱えて立っている。一本は私のぶんだろう。手を振ろうとして、やめた。三年ぶりに会う相手に、どんな顔をすればいいのかわからなかった。',
+'「遅かったね」',
+'　祖母は《《それだけ》》言って、｜紺青《こんじょう》の傘を差し出した。',
+'「電車が止まってたの。信号のトラブルだって」',
+'「そう」',
+'　短い返事のあとで、祖母は私の荷物に目をやった。キャリーバッグがひとつと、肩から提げた紙袋がふたつ。春休みのあいだだけ泊まるにしては、多すぎる量だった。'
+].join('\n');
+
+const $=id=>document.getElementById(id);
+const sheets=$('sheets'), caretEl=$('caret'), ta=$('ta'), titleIn=$('title'), selLayer=$('sel'), hitsLayer=$('hits'), lintLayer=$('lint');
+let doc=[], types=['body'], pids=[1], pidSeq=1, caret=0, title='', curId=null;
+let L=null, P=[], CELL=30, PADX=30, G=null, K=null, docGen=0;
+let undo=[], redo=[], lastKind='', lastT=0, composing=false, changed=false;
+let anchor=null, dragging=false, mouseClick=false, clipPrep=false;
+let notes={}, notesFor=null, pplFor=null;
+const pages=[];
+
+/* この端末の字詰め（1行の字数・1ページの行数）と行間。1ページの行数が0なら、画面の幅に入るだけの行数にする */
+let ROWS=34, PER_SET=0, PER=20, LH=1.75;
+try{
+  const sm=Math.min(screen.width||0,screen.height||0);
+  const r=parseInt(localStorage.getItem('bunpitu-rows'),10); ROWS=r>=10&&r<=60?r:(sm&&sm<900?30:34);
+  const p=parseInt(localStorage.getItem('bunpitu-per'),10); PER_SET=p>=4&&p<=60?p:0;
+  const h=parseFloat(localStorage.getItem('bunpitu-lh')); if(h===1.6||h===1.75||h===1.9) LH=h;
+}catch(e){}
+
+/* ---------- 書式の判定・テキスト変換 ---------- */
+const detect=line=>HEADRE.test(line)?'head':'body';
+function fromPlain(text){
+  const lines=text.replace(/^﻿/,'').replace(/\r\n?/g,'\n').split('\n');
+  return {d:lines.join('\n'),y:lines.map(detect)};
+}
+const getPlain=(lo,hi)=>doc.slice(lo,hi).join('');
+const getClip=getPlain;
+/* 書き出し用：傍点の記号を外し、ルビを「親文字（よみ）」の形にする */
+const plainOut=t=>rubyParen(t.replace(/《《([^《》\n]*)》》/g,'$1'));
+/* 一覧に出す見出しなど：ルビの読みと傍点の記号を外す */
+const stripMarks=t=>t.replace(/《《([^《》\n]*)》》/g,'$1').replace(/｜([^｜《》\n]{1,20})《[^《》\n]+》/g,'$1').replace(/《[^《》\n]+》/g,'');
+const decodeTypes=s=>[...(s||'')].map(c=>DECODE[c]||'body');
+const encPids=()=>pids.map(x=>x.toString(36)).join(',');
+const decPids=s=>s?String(s).split(',').map(x=>parseInt(x,36)).filter(Number.isFinite):[];
+const newPid=()=>++pidSeq;
+const SAMPLE_DATA=fromPlain(SAMPLE);
+function fixTypes(){
+  const n=doc.reduce((a,c)=>a+(c==='\n'),0)+1;
+  types=types.slice(0,n).map(t=>NAMES[t]?t:'body');
+  while(types.length<n) types.push('body');
+  pids=pids.slice(0,n); while(pids.length<n) pids.push(newPid());
+}
+function setDoc(o){
+  curId=o.id; title=o.t||''; doc=[...(o.d||'')]; types=(o.y||[]).slice();
+  pids=(o.pids||[]).slice(); pidSeq=pids.reduce((m,x)=>Math.max(m,x),0);
+  notes=Object.assign({},o.notes||{}); notesFor=null; pplFor=null;
+  caret=Math.max(0,Math.min(o.c|0,doc.length)); fixTypes(); titleIn.value=title;
+  undo=[]; redo=[]; lastKind=''; anchor=null; docGen++; K=null;
+}
+const newId=()=>'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const countChars=a=>a.reduce((n,ch)=>n+(ch==='\n'?0:1),0);
+const fmt=n=>String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+
+/* ---------- 文字数：改行とルビ・傍点の記号（ルビの読みを含む）は数えない。
+   all＝字下げ込み、net＝段落の頭の字下げ（全角・半角の空白）を除いた数 ---------- */
+function countIn(arr,lo,hi,markup){
+  let lead=true;
+  for(let q=lo-1;q>=0&&arr[q]!=='\n';q--){ if(markup&&markup[q]) continue; if(arr[q]!=='　'&&arr[q]!==' '){ lead=false; break; } }
+  let all=0, ind=0;
+  for(let k=lo;k<hi;k++){
+    const c=arr[k];
+    if(c==='\n'){ lead=true; continue; }
+    if(markup&&markup[k]) continue;
+    all++;
+    if(lead&&(c==='　'||c===' ')) ind++; else lead=false;
+  }
+  return {all,net:all-ind};
+}
+function markupOf(arr){
+  const m=new Uint8Array(arr.length);
+  for(const g of rubyRuns(arr)){ for(let k=g.s;k<g.bs;k++) m[k]=1; for(let k=g.be;k<g.e;k++) m[k]=1; }
+  for(const g of emphRuns(arr)){ m[g.s]=m[g.s+1]=m[g.e-2]=m[g.e-1]=1; }
+  return m;
+}
+const countArr=arr=>countIn(arr,0,arr.length,markupOf(arr));
+
+/* ---------- 端末内キャッシュ（即時保存・オフライン用） ---------- */
+
+/* ---------- 保存：原稿はまず端末内（IndexedDB）に保存し、Firebaseで端末間を同期する ----------
+   ・書く／保存する／PDFにする、はどのサーバーが止まっていても端末だけで動く
+   ・同期は通信できるときに行う。通信できない間の変更は端末にためておき、つながったら送る
+   ・起動時やアプリに戻ったときは、開いている原稿の最新の版を確かめてから書けるようにする
+   ・それでも両方の端末で同期前に書き換えた場合は、サーバーにある版を元の原稿とし、この端末の版を「（iPadで書いた版）」などとして残す */
+const FBC=window.BUNPITU_FIREBASE||window.HONGAKI_FIREBASE||window.GENKO_FIREBASE;   /* Hongaki・Kousei と同じ firebase-config.js も使える */
+const CFG=(FBC&&FBC.apiKey)?FBC:null;
+let mode='local';            /* local：同期の設定なし／signedout：未ログイン／online：同期中／offline：通信できない */
+let localPending=false, saveErr=null, pushing=false, lastSync=0, editVersion=0;
+const recs=new Map();        /* 端末内の全原稿 id → {id,title,d,y,p,n,c,updatedAt,dirty,remoteAt,rparts,deleted,sample} */
+const sentParts=new Map();   /* 送信済みの本文の区切り（変わった部分だけ送るため） */
+let idb=null, fbApp=null, auth=null, fdb=null, uid=null, userEmail='', unsubRemote=null;
+const DEVICE=()=>navigator.maxTouchPoints>1?'iPad':'Mac';
+
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('bunpitu-docs',1);
+    r.onupgradeneeded=()=>{ r.result.createObjectStore('docs',{keyPath:'id'}); r.result.createObjectStore('kv'); };
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+  });
+}
+function tx(store,rw,fn){
+  if(!idb) return Promise.resolve(undefined);
+  return new Promise((res,rej)=>{
+    const t=idb.transaction(store,rw), req=fn(t.objectStore(store)); let out;
+    if(req) req.onsuccess=()=>{ out=req.result; };
+    t.oncomplete=()=>res(out); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error);
+  });
+}
+const idbAll=()=>tx('docs','readonly',s=>s.getAll());
+const idbPut=o=>tx('docs','readwrite',s=>s.put(o));
+const idbDel=id=>tx('docs','readwrite',s=>s.delete(id));
+const kvGet=k=>tx('kv','readonly',s=>s.get(k));
+const kvSet=(k,v)=>tx('kv','readwrite',s=>s.put(v,k));
+const liveList=()=>[...recs.values()].filter(r=>!r.deleted).sort((a,b)=>b.updatedAt-a.updatedAt);
+
+function editorRec(){ return {id:curId,title,d:doc.join(''),y:types.map(t=>CODE[t]).join(''),p:encPids(),n:Object.assign({},notes),c:caret}; }
+function loadRec(r){
+  setDoc({id:r.id,t:r.title,d:r.d||'',y:decodeTypes(r.y),pids:decPids(r.p),notes:r.n||{},c:r.c||0});
+  kvSet('current',r.id).catch(()=>{});
+}
+
+/* 編集のたびに呼ぶ：少し待って端末内に保存し、その後で同期を予約する */
+let localT=0, caretT=0, pushT=0;
+function markDirty(){ editVersion++; localPending=true; saveErr=saveErr==='local'?null:saveErr; clearTimeout(localT); localT=setTimeout(saveLocalNow,400); updateSave(); }
+async function saveLocalNow(){
+  clearTimeout(localT); if(!curId||!localPending) return;
+  localPending=false;
+  const prev=recs.get(curId)||{remoteAt:0};
+  const r=Object.assign({},prev,editorRec(),{updatedAt:Date.now(),dirty:true,deleted:false,sample:false});
+  recs.set(curId,r);
+  try{ await idbPut(r); }catch(e){ saveErr='local'; }
+  updateSave(); schedulePush(5000);
+}
+/* カーソル位置だけの変化は同期せず、端末内に記録するだけ */
+function saveCache(){
+  clearTimeout(caretT);
+  caretT=setTimeout(()=>{ const r=recs.get(curId); if(r&&r.c!==caret&&!localPending){ r.c=caret; idbPut(r).catch(()=>{}); } },1500);
+}
+
+/* ---------- 同期（Firebase） ---------- */
+function schedulePush(ms){ clearTimeout(pushT); if(mode==='online') pushT=setTimeout(pushAll,ms||0); }
+const withTimeout=(p,ms)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej({code:'timeout'}),ms))]);
+async function pushAll(){
+  clearTimeout(pushT);
+  if(mode!=='online'||pushing) return;
+  if(!navigator.onLine){ mode='offline'; updateSave(); return; }
+  pushing=true; updateSave();
+  try{
+    if(localPending) await saveLocalNow();
+    for(const r of [...recs.values()]) if(r.dirty&&!r.sample) await pushOne(r);
+    lastSync=Date.now(); saveErr=null;
+  }catch(e){ saveErr=(e&&e.code)||'error'; setTimeout(()=>schedulePush(0),20000); }
+  pushing=false; updateSave(); refreshPanel();
+}
+async function pushOne(r){
+  const ver=r.updatedAt, base=FB.doc(fdb,'users',uid,'bunpitu',r.id);
+  if(r.deleted){
+    await withTimeout(FB.setDoc(base,{deleted:true,updatedAt:ver,title:r.title||'',parts:0}),30000);
+    for(let k=0;k<(r.rparts||0);k++) await withTimeout(FB.deleteDoc(FB.doc(fdb,'users',uid,'bunpitu',r.id,'parts',String(k))),30000);
+    recs.delete(r.id); sentParts.delete(r.id); await idbDel(r.id); return;
+  }
+  const arr=[...(r.d||'')], parts=[];
+  for(let k=0;k<arr.length;k+=PART) parts.push(arr.slice(k,k+PART).join('')); if(!parts.length) parts.push('');
+  const sent=sentParts.get(r.id)||[];
+  for(let k=0;k<parts.length;k++) if(sent[k]!==parts[k]) await withTimeout(FB.setDoc(FB.doc(fdb,'users',uid,'bunpitu',r.id,'parts',String(k)),{text:parts[k]}),30000);
+  for(let k=parts.length;k<(r.rparts||0);k++) await withTimeout(FB.deleteDoc(FB.doc(fdb,'users',uid,'bunpitu',r.id,'parts',String(k))),30000);
+  await withTimeout(FB.setDoc(base,{title:r.title||'',types:r.y||'',pids:r.p||'',notes:r.n||{},caret:r.c||0,
+    chars:countArr(arr).net,parts:parts.length,updatedAt:ver,deleted:false,device:DEVICE()}),30000);
+  sentParts.set(r.id,parts);
+  const cur=recs.get(r.id); if(!cur) return;
+  cur.rparts=parts.length; cur.remoteAt=ver;
+  if(cur.updatedAt===ver) cur.dirty=false;   /* 送っている間に書き足された分は、次の同期で送る */
+  await idbPut(cur);
+}
+async function fetchRemote(id,R){
+  const n=R.parts||0;
+  const ps=await Promise.all(Array.from({length:n},(_,k)=>FB.getDoc(FB.doc(fdb,'users',uid,'bunpitu',id,'parts',String(k)))));
+  const parts=ps.map(s=>s.exists()?((s.data()||{}).text||''):'');
+  sentParts.set(id,parts);
+  return {id,title:R.title||'',d:parts.join(''),y:R.types||'',p:R.pids||'',n:R.notes||{},c:R.caret||0,
+    updatedAt:R.updatedAt||0,dirty:false,remoteAt:R.updatedAt||0,rparts:n,deleted:false};
+}
+let remoteQueue=Promise.resolve();
+function onRemote(snap){
+  const changes=snap.docChanges().filter(ch=>ch.type!=='removed'&&!ch.doc.metadata.hasPendingWrites);
+  remoteQueue=remoteQueue.then(async()=>{
+    for(const ch of changes){ try{ await applyRemote(ch.doc.id,ch.doc.data()); }catch(e){ saveErr=(e&&e.code)||'error'; } }
+    lastSync=Date.now(); updateSave(); refreshPanel();
+  });
+}
+async function applyRemote(id,R){
+  const L=recs.get(id);
+  if(L&&(R.updatedAt||0)<=(L.remoteAt||0)) return;            /* すでに取り込み済み（自分が送った分を含む） */
+  if(R.deleted){
+    if(!L) return;
+    if(L.dirty&&!L.deleted){ L.remoteAt=R.updatedAt; await idbPut(L); return; }   /* こちらで書き足していれば残す */
+    await histSave(L,'deleted');
+    recs.delete(id); await idbDel(id);
+    if(id===curId){ const next=liveList()[0]; if(next){ loadRec(next); render(); } else await newDoc(); toast('別の端末で削除された原稿を閉じました'); }
+    return;
+  }
+  const editingHere=id===curId&&localPending;
+  if(!L||(!L.dirty&&!editingHere)){
+    const full=await fetchRemote(id,R);
+    if(L&&L.deleted) return;
+    if(L){ await histSave(L,'remote'); histWarnCut(countChars([...(L.d||'')]),countChars([...(full.d||'')]),full.title); }
+    recs.set(id,full); await idbPut(full);
+    if(id===curId){ const c=caret; loadRec(full); caret=Math.min(c,doc.length); render(); toast('別の端末での変更を読み込みました'); }
+    else{
+      /* 初めてログインした端末で、手を入れていないサンプル原稿を開いているなら、届いた原稿に切り替える */
+      const cr=recs.get(curId);
+      if(cr&&cr.sample&&!localPending){ recs.delete(cr.id); await idbDel(cr.id); loadRec(liveList()[0]); render(); }
+    }
+    return;
+  }
+  /* 両方の端末で書き換えられていた：サーバーにある版（もう一方の端末の版）を元の原稿として残し、
+     この端末で書き換えた版は「（iPadで書いた版）」などの別の原稿にする。もう一方の端末の原稿は上書きしない */
+  if(id===curId&&localPending) await saveLocalNow();
+  await histSave(recs.get(id)||L,'remote');
+  const mine=Object.assign({},recs.get(id)||L), copyId=newId();
+  Object.assign(mine,{id:copyId,title:(mine.title||'無題')+'（'+DEVICE()+'で書いた版）',dirty:true,remoteAt:0,rparts:0,updatedAt:Date.now(),deleted:false,sample:false});
+  recs.set(copyId,mine); await idbPut(mine);
+  const full=await fetchRemote(id,R);
+  recs.set(id,full); await idbPut(full);
+  if(id===curId){ const c=caret; loadRec(full); caret=Math.min(c,doc.length); render(); }
+  toast('別の端末で新しく書かれた版を読み込みました。この端末で書き換えた分は「（'+DEVICE()+'で書いた版）」として残しています');
+  schedulePush(1000);
+}
+function startSync(){
+  mode=navigator.onLine?'online':'offline'; updateSave();
+  if(unsubRemote) unsubRemote();
+  unsubRemote=FB.onSnapshot(FB.collection(fdb,'users',uid,'bunpitu'),onRemote,err=>{ saveErr=err&&err.code||'error'; updateSave(); });
+  checkLatest().then(()=>schedulePush(500));
+}
+/* 起動時やアプリに戻ったときは、最新の版を確かめ終えるまで書けないようにする（古い版に書き足して上書きするのを防ぐ） */
+let syncWait=false, waitT=0, checking=false;
+function setWait(on){
+  syncWait=on; clearTimeout(waitT);
+  document.documentElement.classList.toggle('syncwait',on);
+  [ta,titleIn,...document.querySelectorAll('.nbox textarea')].forEach(el=>{ if(el) el.readOnly=on; });
+  if(on) waitT=setTimeout(()=>setWait(false),8000);   /* 通信が遅いときも、8秒たったら書けるようにする */
+  updateSave();
+}
+async function checkLatest(){
+  if(mode!=='online'||!uid||checking) return;
+  if(!navigator.onLine){ setWait(false); return; }
+  checking=true; setWait(true);
+  try{
+    const id=curId, s=await withTimeout(FB.getDoc(FB.doc(fdb,'users',uid,'bunpitu',id)),6000);
+    if(s.exists()){
+      const R=s.data(), L=recs.get(id);
+      if(L&&(R.updatedAt||0)>(L.remoteAt||0)){ remoteQueue=remoteQueue.then(()=>applyRemote(id,R)); await remoteQueue; }
+    }
+  }catch(e){}
+  checking=false; setWait(false);
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') checkLatest(); });
+function stopSync(){ if(unsubRemote){ unsubRemote(); unsubRemote=null; } clearTimeout(pushT); }
+function initFirebase(){
+  if(!CFG||!window.FB){ mode='local'; updateSave(); return; }
+  try{
+    fbApp=FB.initializeApp(CFG); auth=FB.getAuth(fbApp); fdb=FB.getFirestore(fbApp);
+    mode='signedout'; if(navigator.onLine) setWait(true);
+    FB.onAuthStateChanged(auth,u=>{
+      if(u){ uid=u.uid; userEmail=u.email||''; startSync(); }
+      else { uid=null; userEmail=''; stopSync(); mode='signedout'; setWait(false); }
+      refreshPanel();
+    });
+  }catch(e){ mode='local'; saveErr='config'; }
+  updateSave();
+}
+window.addEventListener('online',()=>{ if(uid){ mode='online'; updateSave(); checkLatest().then(()=>schedulePush(500)); } });
+window.addEventListener('offline',()=>{ if(uid){ mode='offline'; updateSave(); } });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){ saveLocalNow().then(()=>schedulePush(0)); } });
+window.addEventListener('pagehide',()=>{ saveLocalNow(); });
+
+/* ---------- 原稿の作成・切り替え・削除 ---------- */
+async function openDoc(id){
+  await saveLocalNow();
+  const r=recs.get(id); if(!r) return;
+  loadRec(r); render(); window.scrollTo(0,0);
+  histSave(HIST_CUR(),'open'); histMark();
+}
+async function newDoc(o){
+  await saveLocalNow();
+  const id=newId();
+  setDoc({id,t:(o&&o.t)||'',d:(o&&o.d)||'',y:(o&&o.y)||['body'],c:0,pids:o&&o.pids,notes:o&&o.notes});
+  recs.set(id,Object.assign(editorRec(),{updatedAt:Date.now(),dirty:true,remoteAt:0,rparts:0,deleted:false}));
+  kvSet('current',id).catch(()=>{});
+  markDirty(); render(); window.scrollTo(0,0);
+}
+async function deleteCurrent(){
+  const r=recs.get(curId);
+  localPending=false; clearTimeout(localT);
+  if(r){
+    if(r.remoteAt>0&&CFG){ Object.assign(r,{deleted:true,dirty:true,updatedAt:Date.now()}); await idbPut(r); }   /* 同期済みなら、削除をもう一方の端末にも伝える */
+    else { recs.delete(r.id); await idbDel(r.id); }
+  }
+  const next=liveList()[0];
+  if(next){ loadRec(next); render(); window.scrollTo(0,0); } else await newDoc();
+  schedulePush(500); refreshPanel(); toast('原稿を削除しました');
+}
+
+function updateSave(){
+  const el=$('sSave'); if(!el) return;
+  let s='', k='ok';
+  const waiting=[...recs.values()].some(r=>r.dirty&&!r.sample);
+  if(saveErr==='local'){ s='端末に保存できません'; k='err'; }
+  else if(syncWait) s='最新の版を確認中…';
+  else if(localPending) s='保存中…';
+  else if(mode==='local') s='端末に保存済み（同期なし）';
+  else if(mode==='signedout') s='端末に保存済み・未ログイン';
+  else if(mode==='offline') s=waiting?'端末に保存済み・同期待ち（オフライン）':'端末に保存済み（オフライン）';
+  else if(saveErr){ s='同期に失敗（再試行します）'; k='err'; }
+  else if(pushing) s='同期中…';
+  else if(waiting) s='端末に保存済み・同期待ち';
+  else s='同期済み';
+  el.textContent=s; el.dataset.s=k;
+}
+/* ---------- ルビ・欧文 ---------- */
+/* ルビ：「｜親文字《よみ》」、または漢字の直後に「《よみ》」と書く（青空文庫と同じ書き方）。
+   画面とPDFでは、記号と読みはマスに入れず、親文字の右側に小さく表示する。カーソルがその部分にあるときだけ、記号のまま表示する */
+const KANJI=/[㐀-䶿一-鿿豈-﫿々〆ヶ]/;
+function rubyRuns(d){
+  const out=[], n=d.length;
+  for(let i=0;i<n;i++){
+    if(d[i]!=='《') continue;
+    let j=i+1; while(j<n&&d[j]!=='》'&&d[j]!=='《'&&d[j]!=='\n'&&d[j]!=='｜') j++;
+    if(j>=n||d[j]!=='》'||j===i+1) continue;
+    let pipe=-1;
+    for(let q=i-1;q>=0&&q>=i-21;q--){ const c=d[q]; if(c==='\n'||c==='》'||c==='《') break; if(c==='｜'){ pipe=q; break; } }
+    let s,bs;
+    if(pipe>=0&&pipe<i-1){ s=pipe; bs=pipe+1; }
+    else{ let q=i; while(q>0&&KANJI.test(d[q-1])&&i-q<20) q--; if(q===i) continue; s=q; bs=q; }
+    out.push({s,bs,be:i,rs:i+1,re:j,e:j+1}); i=j;
+  }
+  return out;
+}
+/* テキストの書き出し用：ルビを「親文字（よみ）」の形にする */
+const rubyParen=t=>t.replace(/｜([^｜《》\n]{1,20})《([^《》\n]+)》/g,'$1（$2）').replace(/《([^《》\n]+)》/g,'（$1）');
+/* 傍点：「《《傍点を付ける文字》》」と書く（カクヨムと同じ書き方）。画面では記号を隠し、文字の右側に点を打つ */
+function emphRuns(d){
+  const out=[], n=d.length;
+  for(let i=0;i+1<n;i++){
+    if(d[i]!=='《'||d[i+1]!=='《') continue;
+    let j=i+2; while(j+1<n&&!(d[j]==='》'&&d[j+1]==='》')&&d[j]!=='\n'&&d[j]!=='《') j++;
+    if(j+1>=n||d[j]!=='》'||d[j+1]!=='》'||j===i+2) continue;
+    out.push({s:i,e:j+2}); i=j+1;
+  }
+  return out;
+}
+/* 欧文：半角の英数字・記号のひと続き（1文字から。あいだの半角の空白を含む）は、90度回して縦に流し、2文字で1マスと数える。
+   rot[k] には、そのひと続きの終わりの位置を入れる（0＝欧文ではない） */
+function rotRuns(d){
+  const n=d.length, r=new Int32Array(n);
+  const isL=s=>{ if(s.length!==1) return false; const c=s.charCodeAt(0); return c>=0x21&&c<=0x7E; };
+  for(let k=0;k<n;){
+    if(!isL(d[k])){ k++; continue; }
+    let j=k, last=k;
+    while(j<n&&(isL(d[j])||d[j]===' ')){ if(d[j]!==' ') last=j; j++; }
+    const e=last+1;
+    for(let q=k;q<e;q++) r[q]=e;
+    k=e;
+  }
+  return r;
+}
+/* 配置：rows＝1行の字数。opt.print＝カーソルの位置にかかわらず記号を隠す、opt.lite＝字の位置を記録しない（原稿用紙換算の計算用）。
+   長い原稿でも入力が重くならないよう、字ごとの位置は数の配列（SC＝行、SR＝行の中の位置）に持ち、
+   行ごとの字の並び（cells）は、画面に描くときなどに必要になった行だけ作る（cellsOf） */
+let slotBuf=null;
+function layout(d,rows,opt){
+  opt=opt||{};
+  const lite=!!opt.lite, n=d.length;
+  const cols=[], endMap=lite?null:{}, rot=rotRuns(d);
+  let SC=null, SR=null;
+  if(!lite){
+    if(!slotBuf||slotBuf.SC.length<n+1){ const cap=Math.max(1024,Math.ceil((n+1)*1.25)); slotBuf={SC:new Int32Array(cap),SR:new Int32Array(cap)}; }
+    SC=slotBuf.SC; SR=slotBuf.SR; SC.fill(-1,0,n+1);
+  }
+  const rubies=rubyRuns(d), emphs=emphRuns(d), hidden=new Uint8Array(n), markup=new Uint8Array(n), shownR=[], shownE=[];
+  for(const g of rubies){
+    for(let k=g.s;k<g.bs;k++) markup[k]=1; for(let k=g.be;k<g.e;k++) markup[k]=1;
+    if(!opt.print&&caret>g.s&&caret<g.e) continue;   /* カーソルがルビの中にあるときは記号のまま表示 */
+    for(let k=g.s;k<g.bs;k++) hidden[k]=1; for(let k=g.be;k<g.e;k++) hidden[k]=1;
+    shownR.push(g);
+  }
+  for(const g of emphs){
+    markup[g.s]=markup[g.s+1]=markup[g.e-2]=markup[g.e-1]=1;
+    if(!opt.print&&caret>g.s&&caret<g.e) continue;
+    hidden[g.s]=hidden[g.s+1]=hidden[g.e-2]=hidden[g.e-1]=1;
+    shownE.push(g);
+  }
+  const pcol=[];
+  let i=0, p=0, col, ci=0;
+  const open=first=>{
+    col={start:i,p,t:types[p]||'body',cells:null,hang:[],row:0};
+    if(first) pcol[p]=cols.length;
+    ci=cols.length; cols.push(col);
+  };
+  open(true);
+  while(true){
+    if(i===n){ col.end=i; if(endMap) endMap[i]=ci; break; }
+    const ch=d[i];
+    if(ch==='\n'){ col.end=i; if(endMap) endMap[i]=ci; i++; p++; open(true); continue; }
+    if(hidden[i]){ if(SC){ SC[i]=ci; SR[i]=Math.min(col.row,rows); } i++; continue; }
+    if(col.row<rows && !col.hang.length){
+      const re=rot[i];
+      if(re){
+        /* 欧文：行の残りに収まらないときは、次の行の頭から入れる（1行に収まらない長さのときだけ、行の途中で分ける） */
+        const m=re-i, need=Math.ceil(m/2), room=rows-col.row;
+        if(need>room&&col.row>0&&need<=rows){ col.end=i; open(false); continue; }
+        const take=Math.min(m,room*2), k=Math.ceil(take/2);
+        if(SC) for(let q=0;q<take;q++){ SC[i+q]=ci; SR[i+q]=col.row+(q>>1); }
+        col.row+=k; i+=take; continue;
+      }
+      if(SC){ SC[i]=ci; SR[i]=col.row; }
+      col.row++; i++; continue;
+    }
+    if(col.row===rows && HANG.has(ch) && col.hang.length<2){
+      col.hang.push({i,ch}); if(SC){ SC[i]=ci; SR[i]=rows; } i++; continue;
+    }
+    col.end=i; open(false);
+  }
+  if(lite) return {cols,pcol,markup};
+  const slotAtL=k=>SC[k]>=0?{c:SC[k],r:SR[k]}:null;
+  /* ルビの位置：親文字のマスを行ごとに分け、読みを親文字の数に応じて振り分ける */
+  const rubyAt=new Map(), dotAt=new Map();
+  const put=(m,c,x)=>{ let a=m.get(c); if(!a) m.set(c,a=[]); a.push(x); };
+  for(const g of shownR){
+    const segs=[];
+    for(let k=g.bs;k<g.be;k++){ const sl=slotAtL(k); if(!sl||sl.r>=rows) continue; const last=segs[segs.length-1];
+      if(last&&last.c===sl.c){ last.r1=Math.max(last.r1,sl.r); last.n++; } else segs.push({c:sl.c,r0:sl.r,r1:sl.r,n:1}); }
+    const rd=d.slice(g.rs,g.re), tot=segs.reduce((a,x)=>a+x.n,0); let used=0, acc=0;
+    segs.forEach((x,k)=>{ acc+=x.n; const upto=k===segs.length-1?rd.length:Math.round(rd.length*acc/tot); if(upto>used) put(rubyAt,x.c,{c:x.c,r0:x.r0,r1:x.r1,text:rd.slice(used,upto).join(''),s:g.s}); used=Math.max(used,upto); });
+  }
+  /* 傍点：文字ごとに、その字の右側に点を打つ（空白と句読点には打たない） */
+  for(const g of shownE){
+    for(let k=g.s+2;k<g.e-2;k++){ const sl=slotAtL(k); if(!sl||sl.r>=rows||NODOT.has(d[k])) continue; put(dotAt,sl.c,{r:sl.r}); }
+  }
+  return {cols,SC,SR,n,endMap,rot,hidden,rows,rubyAt,dotAt,markup,pcol,emph:emphs,rubies};
+}
+const NODOT=new Set([...'　 、。，．,.・…‥「」『』（）()'] );
+/* 字の位置：k文字目が何行目（c）の何字目（r）にあるか */
+function slotAt(k){ return L&&k<L.n&&L.SC[k]>=0?{c:L.SC[k],r:L.SR[k]}:null; }
+/* 行の字の並び：必要になったときに作る */
+function cellsOf(col){
+  if(col.cells) return col.cells;
+  const out=[], rows=L.rows, rot=L.rot, hid=L.hidden, e=col.end;
+  let r=0, i=col.start;
+  while(i<e){
+    if(hid[i]){ i++; continue; }
+    if(r>=rows) break;   /* 残りは行末のぶら下げ */
+    const re=rot[i];
+    if(re){ const m=re-i, take=Math.min(m,(rows-r)*2), k=Math.ceil(take/2); out.push({i,ch:doc.slice(i,i+take).join(''),r,n:take,k,rot:true}); r+=k; i+=take; continue; }
+    out.push({i,ch:doc[i],r,n:1}); r++; i++;
+  }
+  return col.cells=out;
+}
+/* 位置から段落の番号を求める（render のあとは P を二分探索する） */
+function paraOf(pos){
+  let lo=0, hi=P.length-1;
+  while(lo<hi){ const m=(lo+hi+1)>>1; if(P[m].start<=pos) lo=m; else hi=m-1; }
+  return lo;
+}
+function buildParas(){
+  const out=[]; let s=0, p=0;
+  for(let k=0;k<=doc.length;k++){
+    if(k===doc.length||doc[k]==='\n'){ out.push({p,start:s,end:k,t:types[p]}); p++; s=k+1; }
+  }
+  return out;
+}
+/* 画面の上端（ツールバーの下端。集中モードのiPadでは最上部の帯の下端） */
+function topEdge(){ const b=document.querySelector('.bar').getBoundingClientRect().bottom, e=document.getElementById('edgeBand'); return Math.max(b,e&&getComputedStyle(e).display!=='none'?e.getBoundingClientRect().bottom:0); }
+const colOf=i=>(i<doc.length&&doc[i]!=='\n'&&slotAt(i))?slotAt(i).c:L.endMap[i];
+/* 位置の目印：その場所の直前の見出し（字詰めは端末ごとに違うため、ページと行ではなく見出しで示す） */
+const cutText=(s,n)=>{ const a=[...s]; return a.length>n?a.slice(0,n).join('')+'…':s; };
+function chapLabel(i){
+  let t=null;
+  for(const x of olItems){ if(x.i<=i) t=x.text; else break; }
+  return t==null?'冒頭':cutText(t||'（見出し）',16);
+}
+
+/* ---------- geometry ---------- */
+function geo(){ const cell=CELL; return {cell,step:cell*LH,pad:PADT,padx:PADX,W:PADX*2+cell*LH*(PER-1)+cell}; }
+function colRight(lc){ return G.padx+lc*G.step; }
+function viewH(){ return window.innerHeight; }  /* 画面キーボードの出し入れで縮まないよう、表示領域全体の高さを使う */
+/* 余白：ページのまわりの灰色の幅（上下左右とページのあいだ）は GAP にそろえる。
+   ページの大きさは表示領域から GAP を引いた大きさにし、1字の大きさと行数を整数にしたときの端数は、ページの中の余白に回す。
+   文字の大きさは、1行の字数とページの高さから決める。1ページの行数を決めてあって幅に入らないときは、幅に合わせて小さくする。
+   ページの中の左右の余白は、最低2字分 */
+const GAP=16, MINX=2;
+let PADT=30;
+function resize(){
+  const root=document.documentElement;
+  const pageW=sheets.clientWidth;
+  const eb=document.getElementById('edgeBand'), barH=Math.max(document.querySelector('.bar').offsetHeight,eb&&getComputedStyle(eb).display!=='none'?eb.offsetHeight:0);
+  root.style.setProperty('--barh',barH+'px');
+  const pageH=Math.max(200,viewH()-barH-GAP*2);
+  let cell=pageH/(ROWS+3), per=PER_SET;   /* ページの高さ＝余白1字＋1行の字数＋ぶら下げ・ページ番号2字 */
+  if(per){ const byW=pageW/(MINX*2+1+LH*(per-1)); cell=Math.min(cell,byW); }
+  cell=Math.max(10,Math.min(64,Math.floor(cell)));
+  if(!per) per=Math.max(4,Math.floor((pageW-(MINX*2+1)*cell)/(cell*LH))+1);
+  CELL=cell;
+  const gridW=cell*(LH*(per-1)+1);
+  PADX=Math.max(cell,Math.round((pageW-gridW)/2*10)/10);
+  PADT=Math.round((cell+(pageH-cell*(ROWS+3))/2)*10)/10;
+  root.style.setProperty('--padx',PADX+'px');
+  root.style.setProperty('--pad',PADT+'px');
+  root.style.setProperty('--cell',cell+'px');
+  root.style.setProperty('--step',(cell*LH)+'px');
+  root.style.setProperty('--rows',String(ROWS));
+  root.style.setProperty('--fs','1.18');   /* 字の大きさ＝1字分の約9割 */
+  root.style.setProperty('--pagew',(PADX*2+gridW)+'px');
+  root.style.setProperty('--pageh',pageH+'px');
+  root.style.setProperty('--gap',GAP+'px');
+  root.classList.add('fit');
+  const perChanged=per!==PER; PER=per;
+  G=geo();
+  if(perChanged&&L) render(); else { paintPages(); placeCaret(); drawSel(); drawHits(); drawLint(); }
+  updLookNote();
+}
+function showCaretPage(){
+  if(!L||!pages.length) return;
+  const {c}=caretCR(); const pg=pages[Math.floor(c/PER)]; if(!pg) return;
+  const barB=topEdge();
+  window.scrollBy(0,pg.el.getBoundingClientRect().top-barB-GAP);
+}
+
+/* ---------- rendering（画面に出ているページと、その前後だけ字を置く） ---------- */
+function makePage(){
+  const el=document.createElement('div'); el.className='page';
+  el.innerHTML=`<div class="pno"></div><div class="ink"></div>`;
+  sheets.insertBefore(el,hitsLayer);
+  return {el,ink:el.querySelector('.ink'),pno:el.querySelector('.pno'),pnoText:null,cls:[],csig:[],on:false};
+}
+/* ページの字は行ごとの箱に入れ、変わった行だけを描き直す（入力のたびにページ全体を作り直さない） */
+function clearPage(pg){ if(!pg.on) return; pg.ink.innerHTML=''; pg.cls=[]; pg.csig=[]; pg.on=false; }
+const WIDEC=/[A-Z@%&#mwMW]/;
+function paintPage(p){
+  const pg=pages[p];
+  if(pg.cls.length!==PER){ pg.ink.innerHTML=''; pg.cls=[]; pg.csig=[]; for(let lc=0;lc<PER;lc++){ const d=document.createElement('div'); d.className='cl'; pg.ink.appendChild(d); pg.cls.push(d); pg.csig.push(''); } }
+  pg.on=true;
+  for(let lc=0;lc<PER;lc++){
+    const c=p*PER+lc, col=L.cols[c];
+    let html='', sig='', wide=false;
+    if(col){
+      const hd=col.t==='head'?' hd':'';
+      for(const x of cellsOf(col)){
+        if(x.rot){ /* 欧文：1字を半マスに入れ、字数が奇数のときは前後に4分の1マスずつ空ける */
+          const cs=[...x.ch], off=(x.k*2-cs.length)/4;
+          html+=`<span class="ch rot${hd}" style="--c:${lc};--r:${x.r};--k:${x.k}">`+cs.map((ch,j)=>{ const w=WIDEC.test(ch); if(w) wide=true; return `<span${w?' class="w"':''} style="--o:${off+j/2}"><i>${ch===' '?'&nbsp;':esc(ch)}</i></span>`; }).join('')+'</span>'; }
+        else html+=`<span class="ch${ASC.test(x.ch)?' up':''}${hd}" style="--c:${lc};--r:${x.r}">${esc(x.ch)}</span>`;
+        sig+=x.r+x.ch+hd;
+      }
+      const rbs=L.rubyAt.get(c);
+      if(rbs) for(const rb of rbs){
+        const m=[...rb.text].length, h=rb.r1-rb.r0+1;
+        html+=`<span class="ruby${m*0.34>h?' dense':''}" data-c="${c}" data-r="${rb.r0}" title="読みを直す・ルビを外す" style="--c:${lc};--r:${rb.r0};--n:${h}">${[...rb.text].map(ch=>`<span>${esc(ch)}</span>`).join('')}</span>`;
+        sig+='\u0003'+rb.r0+rb.text;
+      }
+      const dts=L.dotAt.get(c);
+      if(dts) for(const dt of dts){ html+=`<span class="dot" style="--c:${lc};--r:${dt.r}">﹅</span>`; sig+='\u0006'+dt.r; }
+      if(col.hang.length){
+        const s=col.hang.map(h=>h.ch).join('');
+        html+=`<span class="ch${col.hang.length>1?' two':''}${hd}" style="--c:${lc};--r:${ROWS}">${esc(s)}</span>`;
+        sig+='\u0001'+s;
+      }
+      sig+='|'+ROWS;
+    }
+    if(pg.csig[lc]!==sig){
+      pg.cls[lc].innerHTML=html; pg.csig[lc]=sig;
+      /* 欧文：半マスに収まらない幅の広い文字（大文字・m・w など）だけ、文字の向きに沿って縮める。
+         幅を測ると画面全体の計算が走るため、測るのはこの字があるときだけ */
+      if(wide) pg.cls[lc].querySelectorAll('.ch.rot>span.w').forEach(el=>{ const g=el.firstChild, lim=el.clientHeight*0.96, h=g.offsetHeight; if(h>lim) el.style.setProperty('--sy',(lim/h).toFixed(3)); });
+    }
+  }
+}
+function visRange(){
+  const n=pages.length; if(!n) return [0,-1];
+  const r0=pages[0].el.getBoundingClientRect(), pitch=n>1?pages[1].el.getBoundingClientRect().top-r0.top:r0.height+GAP;
+  if(!(pitch>0)) return [0,n-1];
+  const a=Math.floor(-r0.top/pitch)-1, b=Math.floor((window.innerHeight-r0.top)/pitch)+1;
+  return [Math.max(0,a),Math.min(n-1,b)];
+}
+function paintPages(){
+  if(!L||!G||!pages.length) return;
+  const [a,b]=visRange(), cp=Math.floor(caretCR().c/PER);
+  for(let p=0;p<pages.length;p++){
+    if((p>=a&&p<=b)||p===cp) paintPage(p);
+    else clearPage(pages[p]);
+    const pn=String(p+1);
+    if(pages[p].pnoText!==pn){ pages[p].pno.textContent=pn; pages[p].pnoText=pn; }
+  }
+}
+{ let raf=0; window.addEventListener('scroll',()=>{ if(!raf) raf=requestAnimationFrame(()=>{ raf=0; paintPages(); }); },{passive:true}); }
+function render(){
+  L=layout(doc,ROWS); P=buildParas();
+  const n=Math.max(1,Math.ceil(L.cols.length/PER));
+  while(pages.length<n) pages.push(makePage());
+  while(pages.length>n) pages.pop().el.remove();
+  paintPages(); updPageNav();
+  if(changed){ changed=false; markDirty(); }
+  if(!K||K.gen!==docGen) scheduleK();
+  if(tab==='find') computeHits();
+  updateStats(); placeCaret(); drawSel(); drawHits(); runLint(); saveCache(); updateSave(); updatePanels();
+  $('bUndo').disabled=!undo.length; $('bRedo').disabled=!redo.length;
+  $('bRuby').disabled=!rubyTarget(); $('bEmph').disabled=!emphTarget();
+  const r=selRange();
+  const cur=types[paraOf(r?r[0]:caret)];
+  document.querySelectorAll('.seg button[data-type]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.type===cur)));
+}
+/* 原稿用紙換算：本文を20字×20行に並べ直して数える（段落ごとに新しい行から始め、行頭の句読点は前の行の下にぶら下げる） */
+let kT=0;
+function computeK(){
+  const LL=layout(doc,KROWS,{print:true,lite:true});
+  const mai=doc.length?Math.ceil(LL.cols.length/KPER):0;
+  const mk=LL.markup, heads={}, hs=P.filter(x=>x.t==='head');
+  hs.forEach((x,k)=>{
+    const nx=hs[k+1], endI=nx?nx.start:doc.length, endC=nx?LL.pcol[nx.p]:LL.cols.length;
+    const c=countIn(doc,x.start,endI,mk);
+    heads[pids[x.p]]={net:c.net,mai:(endC-LL.pcol[x.p])/KPER};
+  });
+  K={gen:docGen,mai,heads};
+}
+function scheduleK(){
+  clearTimeout(kT);
+  kT=setTimeout(()=>{ computeK(); updateStats(); olSig=''; updatePanels(); },doc.length>50000?600:250);
+}
+
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function caretCR(){
+  if(caret<doc.length && doc[caret]!=='\n') return slotAt(caret);
+  const c=L.endMap[caret]; const col=L.cols[c];
+  return {c,r:col.hang.length?ROWS+1:col.row};
+}
+function cellXY(c,r){
+  const p=Math.floor(c/PER), lc=c%PER, pg=pages[p].el;
+  return {x:pg.offsetLeft+G.W-colRight(lc)-G.cell, y:pg.offsetTop+G.pad+r*G.cell};
+}
+/* iPad：変換中は、入力欄を変換中の文字が収まる大きさに縮める（原稿のマス目を隠さないように） */
+let taBox=null;
+function fitTA(){
+  if(!IPAD||!taBox||!composing) return;
+  const n=Math.max(1,[...ta.value].length);
+  const per=Math.max(1,Math.floor(taBox.maxH/G.cell)-1);
+  const cols=Math.ceil(n/per), w=cols*G.step;
+  const h=Math.min(taBox.maxH,(Math.min(n,per)+0.4)*G.cell);
+  ta.style.left=(taBox.right-w)+'px'; ta.style.width=w+'px'; ta.style.height=h+'px';
+}
+/* Mac：変換中の文字は、カーソルのマスから下に並べ、その行の20マス目に届いたら左の行へ折り返す（ページの下にはみ出さないように）。
+   入力欄は変換中の文字の最後のマスに重ね、変換候補がその近くに出るようにする */
+let imeAt=null;
+function layoutIme(){
+  const im=document.getElementById('ime'); if(IPAD||!imeAt||!G||!im) return;
+  const {x,y,r}=imeAt, rem=Math.max(2,ROWS-r);
+  const rightEdge=x+G.cell+(G.step-G.cell)/2;
+  im.style.top=y+'px'; im.style.height=(rem*G.cell+0.5)+'px'; im.style.lineHeight=G.step+'px';
+  const n=im.hidden?0:[...im.textContent].length;
+  if(!n){ im.style.left=(rightEdge-G.step)+'px'; return; }
+  const cols=Math.ceil(n/rem), k=cols-1, row=n-1-k*rem;
+  im.style.left=(rightEdge-cols*G.step)+'px';
+  if(composing){ ta.style.left=(x-k*G.step)+'px'; ta.style.top=(y+row*G.cell)+'px'; }
+}
+function placeCaret(){
+  if(!L||!G||!pages.length) return;
+  caretEl.hidden=!!selRange();
+  const {c,r}=caretCR(); const {x,y}=cellXY(c,r);
+  caretEl.style.left=(x+G.cell*.08)+'px'; caretEl.style.top=(y-1)+'px';
+  if(document.documentElement.classList.contains('ipad')){
+    /* iPad：入力欄は縦書きで、カーソルの行から下に重ねる（変換中はこの入力欄を見せる） */
+    const w=G.step*3, rightEdge=x+G.cell+(G.step-G.cell)/2;
+    taBox={right:rightEdge,top:y,maxH:Math.max(G.cell*3,(ROWS-Math.min(r,ROWS))*G.cell)};
+    ta.style.left=(rightEdge-w)+'px'; ta.style.top=y+'px'; ta.style.width=w+'px'; ta.style.height=taBox.maxH+'px';
+    if(composing) fitTA();
+  } else {
+    /* Mac：入力欄は横書きでカーソルのマスに重ねる（変換中の文字は原稿上の枠に表示） */
+    ta.style.left=x+'px'; ta.style.top=y+'px'; ta.style.width=Math.max(48,G.cell*2)+'px'; ta.style.height=Math.max(24,G.cell)+'px';
+  }
+  imeAt={x,y,r}; layoutIme();
+}
+function spanBoxes(ranges){
+  const spans={};
+  for(const [a,b] of ranges) for(let k=a;k<b;k++){
+    const s=slotAt(k); if(!s) continue;
+    const key=s.c+':'+a, e=spans[key]||(spans[key]={c:s.c,a:s.r,b:s.r}); e.a=Math.min(e.a,s.r); e.b=Math.max(e.b,s.r);
+  }
+  let h='';
+  for(const k in spans){
+    const sp=spans[k], {x,y}=cellXY(sp.c,sp.a);
+    h+=`<div style="left:${x-2}px;top:${y}px;width:${G.cell+4}px;height:${(sp.b-sp.a+1)*G.cell}px"></div>`;
+  }
+  return h;
+}
+function drawSel(){
+  const r=selRange();
+  selLayer.innerHTML=(!r||!L||!G)?'':spanBoxes([r]);
+}
+/* 右上の表示：原稿用紙換算の枚数・文字数（字下げを除く／字下げ込み）。文字を選んでいるときは、選んだ範囲の文字数も出す */
+function updateStats(){
+  const st=countIn(doc,0,doc.length,L.markup);
+  $('sNet').textContent=fmt(st.net); $('sAll').textContent=fmt(st.all);
+  $('sMai').textContent=K?fmt(K.mai):'…';
+  const r=selRange(), sl=$('sSel');
+  if(r){ const s=countIn(doc,r[0],r[1],L.markup); $('sSelNet').textContent=fmt(s.net); $('sSelAll').textContent=fmt(s.all); sl.hidden=false; }
+  else sl.hidden=true;
+}
+
+/* ---------- サイドパネル：目次・人物・メモ・校正・検索 ---------- */
+let tab='toc';
+try{ const t=localStorage.getItem('bunpitu-tab'); if(t==='toc'||t==='people'||t==='notes'||t==='lint') tab=t; }catch(e){}
+function setTab(t){
+  tab=t;
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));
+  $('tabToc').hidden=t!=='toc'; $('tabPeople').hidden=t!=='people'; $('tabNotes').hidden=t!=='notes'; $('tabFind').hidden=t!=='find'; $('tabLint').hidden=t!=='lint';
+  if(t!=='find'){ try{ localStorage.setItem('bunpitu-tab',t); }catch(e){} }
+  if(L) render();
+  if(t==='people') $('pplList').querySelectorAll('textarea').forEach(autoGrow);
+}
+document.querySelector('.tabs').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-tab]'); if(!b) return;
+  setTab(b.dataset.tab);
+  if(b.dataset.tab==='find'){ $('fQ').focus(); $('fQ').select(); }
+});
+const GRIP='<span class="grip" title="ドラッグして並べ替える" aria-label="並べ替える"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>';
+let olSig='', olItems=[];
+function chapters(){
+  const items=[];
+  for(const x of P) if(x.t==='head') items.push({i:x.start,p:x.p,pid:pids[x.p],text:stripMarks(doc.slice(x.start,x.end).join('')).trim()});
+  return items;
+}
+function updatePanels(){
+  /* 目次 */
+  const items=chapters();
+  const sig=items.map(x=>x.i+':'+x.pid+':'+x.text).join('\u0000')+'|'+(K?K.gen:-1);
+  if(sig!==olSig){
+    olSig=sig; olItems=items;
+    $('olCount').textContent=items.length?'見出し '+items.length:'';
+    $('olList').innerHTML=items.map((x,k)=>{
+      const h=K&&K.heads[x.pid], m=h?`${fmt(h.net)}文字・${h.mai.toFixed(1)}枚`:'';
+      return `<li><button type="button" data-i="${x.i}"><span class="n">${k+1}</span><span class="t">${esc(x.text||'（見出しの文言なし）')}</span><span class="m">${m}</span></button>${GRIP}</li>`;
+    }).join('');
+    $('olEmpty').hidden=items.length>0;
+  }
+  let cur=-1; olItems.forEach((x,k)=>{ if(x.i<=caret) cur=k; });
+  { const ts=$('tiScene'); if(ts){ const t=cur>=0?(olItems[cur].text||'（見出しの文言なし）'):''; if(ts.textContent!==t) ts.textContent=t; } }
+  [...$('olList').children].forEach((li,k)=>li.classList.toggle('cur',k===cur));
+  /* 人物・メモ：原稿を切り替えたときだけ書き直す */
+  if(pplFor!==curId) renderPeople();
+  if(notesFor!==curId){ notesFor=curId; document.querySelectorAll('.nbox textarea').forEach(el=>{ el.value=notes[el.dataset.key]||''; }); }
+  if(tab==='find'){ renderFindList(); if(rubyMode) renderRubyList(); }
+  if(tab==='lint') renderLintList();
+}
+$('olList').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-i]'); if(!b) return;
+  jumpTo(+b.dataset.i);
+});
+function jumpTo(i){
+  anchor=null; caret=Math.min(i,doc.length); lastKind=''; render(); showCaretPage();
+  ta.focus({preventScroll:true});
+}
+
+/* 人物：名前と、かんたんなプロフィール（原稿ごとに保存し、同期する） */
+const escA=s=>esc(String(s)).replace(/"/g,'&quot;');
+function people(){ if(!Array.isArray(notes.people)) notes.people=[]; return notes.people; }
+function autoGrow(el){ el.style.height='auto'; el.style.height=Math.max(el.scrollHeight+2,44)+'px'; }
+function renderPeople(){
+  pplFor=curId;
+  const a=Array.isArray(notes.people)?notes.people:[];
+  $('pplCount').textContent=a.length?'人物 '+a.length:'';
+  $('pplList').innerHTML=a.map((x,k)=>`<li><div class="pf"><input type="text" class="pnm" data-k="${k}" value="${escA(x.n||'')}" placeholder="名前" aria-label="名前" autocomplete="off" spellcheck="false"><textarea class="ppr" data-k="${k}" rows="2" placeholder="プロフィール" aria-label="プロフィール">${esc(x.p||'')}</textarea></div><div class="pside">${GRIP}<button type="button" class="pdel" data-k="${k}" title="この人物を削除" aria-label="この人物を削除"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div></li>`).join('');
+  if(tab==='people') $('pplList').querySelectorAll('textarea').forEach(autoGrow);
+}
+$('pplList').addEventListener('input',e=>{
+  const el=e.target, k=+el.dataset.k, a=people(); if(!a[k]) return;
+  if(el.classList.contains('pnm')) a[k].n=el.value; else if(el.classList.contains('ppr')){ a[k].p=el.value; autoGrow(el); }
+  $('pplCount').textContent='人物 '+a.length;
+  markDirty(); saveCache();
+});
+$('pplList').addEventListener('click',e=>{
+  const b=e.target.closest('button.pdel'); if(!b) return;
+  /* 1回目で確認の表示にし、もう一度押したら削除する */
+  if(!b.classList.contains('arm')){ b.classList.add('arm'); b.textContent='削除'; setTimeout(()=>{ if(b.isConnected&&b.classList.contains('arm')) renderPeople(); },3000); return; }
+  const a=people(), k=+b.dataset.k, nm=(a[k]&&a[k].n)||'人物';
+  a.splice(k,1); if(!a.length) delete notes.people;
+  markDirty(); saveCache(); renderPeople(); toast('「'+nm+'」を削除しました');
+});
+$('pplAdd').addEventListener('click',()=>{
+  people().push({n:'',p:''}); markDirty(); saveCache(); renderPeople();
+  const ins=$('pplList').querySelectorAll('input.pnm'); if(ins.length) ins[ins.length-1].focus();
+});
+function movePerson(k,t){
+  const a=people(); if(k<0||k>=a.length||t===k||t===k+1) return;
+  const [x]=a.splice(k,1); a.splice(t>k?t-1:t,0,x);
+  markDirty(); saveCache(); renderPeople();
+}
+/* メモ：入力のたびに保存（同期の対象） */
+document.querySelectorAll('.nbox textarea').forEach(el=>el.addEventListener('input',()=>{
+  const k=el.dataset.key; if(el.value) notes[k]=el.value; else delete notes[k];
+  markDirty(); saveCache();
+}));
+
+function scrollToCaret(){
+  const top=topEdge()+8;
+  const vv=window.visualViewport;
+  const bottom=(vv?vv.height+vv.offsetTop:window.innerHeight)-24;
+  /* カーソルのあるページがまるごと見える位置に合わせる */
+  const pg=pages[Math.floor(caretCR().c/PER)];
+  if(pg){ const pr=pg.el.getBoundingClientRect(); if(pr.top<top-12||pr.bottom>bottom+26) showCaretPage(); }
+}
+$('lIgnReset').addEventListener('click',()=>{ delete notes.lintIgnore; markDirty(); lintSig=''; lintListSig=''; runLint(); });
+$('lList').addEventListener('click',e=>{
+  const g=e.target.closest('button.lign');
+  if(g){ const set=new Set(String(notes.lintIgnore||'').split(',').filter(Boolean)); set.add(g.dataset.g); notes.lintIgnore=[...set].join(','); markDirty(); lintSig=''; runLint(); return; }
+  const f=e.target.closest('button.lfix');
+  if(f){ /* 場所の部分を「同」に置き換える（後ろから置き換えて位置がずれないようにする） */
+    const x=lints[+f.dataset.f]; if(!x||!x.fix) return;
+    snapshot('replace'); lastKind='';
+    for(const r of [...x.fix].sort((p,q)=>q.a-p.a)) doc.splice(r.a,r.b-r.a,'同');
+    anchor=null; caret=Math.min(x.a+1,doc.length); render(); return;
+  }
+  const b=e.target.closest('button[data-i]'); if(b) jumpTo(+b.dataset.i);
+});
+/* 検索・置換 */
+let hits=[], fqLen=0;
+function computeHits(){
+  hits=[]; const q=[...$('fQ').value]; fqLen=q.length;
+  if(!q.length) return;
+  outer: for(let i=0;i+q.length<=doc.length;){
+    for(let k=0;k<q.length;k++) if(doc[i+k]!==q[k]){ i++; continue outer; }
+    hits.push(i); i+=q.length;
+  }
+}
+function curHit(){
+  const r=selRange(); if(!r||r[1]-r[0]!==fqLen) return -1;
+  return hits.indexOf(r[0]);
+}
+function drawHits(){
+  if(tab==='find'&&rubyMode&&L&&G){ hitsLayer.innerHTML=spanBoxes(rubyRuns(doc).slice(0,2000).map(g=>[g.bs,g.be])); return; }
+  if(tab!=='find'||!hits.length||!L||!G){ hitsLayer.innerHTML=''; return; }
+  hitsLayer.innerHTML=spanBoxes(hits.slice(0,2000).map(h=>[h,h+fqLen]));
+}
+/* ルビの一覧：原稿の順／親文字ごと */
+let rubyMode=false, rubyOrder='order', rSig='';
+function renderRubyList(){
+  const gs=rubyRuns(doc);
+  const sig=rubyOrder+'|'+gs.map(g=>g.s+':'+g.e).join(',')+'|'+doc.length;
+  if(sig===rSig) return; rSig=sig;
+  const txt=(a,b)=>doc.slice(a,b).join('');
+  /* 前後の文：ルビは「親文字（よみ）」の形にし、途中で切れた記号は外す */
+  const before=a=>{ let t=rubyParen(txt(Math.max(0,a-40),a)); const k=t.lastIndexOf('》'); if(k>=0&&t.indexOf('《')<0) t=t.slice(k+1); t=t.replace(/[｜《》]/g,''); return esc(t.slice(-8).replace(/\n/g,'／')); };
+  const after=b=>{ let t=rubyParen(txt(b,Math.min(doc.length,b+40))); const k=t.indexOf('《'); if(k>=0&&t.indexOf('》',k)<0) t=t.slice(0,k); t=t.replace(/[｜《》]/g,''); return esc(t.slice(0,8).replace(/\n/g,'／')); };
+  const item=g=>`<li><button type="button" data-i="${g.s}"><span class="m">${esc(chapLabel(g.bs))}</span><span class="r">${esc(txt(g.bs,g.be))}<small>（${esc(txt(g.rs,g.re))}）</small></span><span class="s">${before(g.s)}<mark>${esc(txt(g.bs,g.be))}</mark>${after(g.e)}</span></button></li>`;
+  $('rCount').textContent=gs.length?gs.length+'か所':'';
+  $('rEmpty').hidden=gs.length>0;
+  if(rubyOrder==='order'){ $('rList').innerHTML=gs.slice(0,500).map(item).join(''); return; }
+  const by=new Map();
+  for(const g of gs){ const k=txt(g.bs,g.be); if(!by.has(k)) by.set(k,[]); by.get(k).push(g); }
+  let h='';
+  for(const [base,list] of by){
+    const reads=[...new Set(list.map(g=>txt(g.rs,g.re)))];
+    h+=`<li class="gh"><span>${esc(base)}<small class="c">　${esc(reads.join('・'))}</small></span>${reads.length>1?`<span class="w">読みが${reads.length}種類</span>`:`<span class="c">${list.length}か所</span>`}</li>`;
+    h+=list.map(item).join('');
+  }
+  $('rList').innerHTML=h;
+}
+function setRubyMode(on){
+  rubyMode=on; rSig='';
+  $('rToggle').setAttribute('aria-pressed',String(on)); $('rMode').hidden=!on;
+  $('rBox').hidden=!on; $('fList').hidden=on;
+  if(on) renderRubyList();
+  drawHits();
+}
+$('rToggle').addEventListener('click',()=>setRubyMode(!rubyMode));
+$('rMode').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-rm]'); if(!b) return;
+  rubyOrder=b.dataset.rm; rSig='';
+  $('rMode').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  renderRubyList();
+});
+$('rList').addEventListener('click',e=>{ const b=e.target.closest('button[data-i]'); if(b) jumpTo(+b.dataset.i); });
+let fSig='';
+/* ---------- 校正：句読点・カギ括弧の重複、カッコの閉じ忘れ ---------- */
+let lints=[], lintSig='', lintListSig='';
+const OPEN={'「':'」','『':'』','（':'）'}, CLOSE={'」':'「','』':'『','）':'（'};
+/* 段落の頭の字下げ漏れ：本文の段落が、空白でもカッコでもない字で始まっているもの */
+const OPENERS=new Set([...'「『（(〈《【〔［“‘']);
+function findLints(){
+  const out=[], n=doc.length;
+  /* 重複：句読点が続く／同じカギ括弧が続く */
+  for(let i=0;i<n;){
+    const c=doc[i];
+    if(c==='。'||c==='、'){ let j=i+1; while(j<n&&(doc[j]==='。'||doc[j]==='、')) j++; if(j-i>1) out.push({a:i,b:j,k:'句読点の重複'}); i=j; continue; }
+    if(c==='「'||c==='」'||c==='『'||c==='』'){ let j=i+1; while(j<n&&doc[j]===c) j++; if(j-i>1) out.push({a:i,b:j,k:'カギ括弧の重複'}); i=j; continue; }
+    i++;
+  }
+  /* 閉じ忘れ：段落ごとに、開きと閉じの対応を調べる */
+  let st=[];
+  const flush=()=>{ for(const x of st) out.push({a:x.i,b:x.i+1,k:'閉じていないカッコ'}); st=[]; };
+  for(let i=0;i<=n;i++){
+    const c=i<n?doc[i]:'\n';
+    if(c==='\n'){ flush(); continue; }
+    if(OPEN[c]){ st.push({c,i}); continue; }
+    if(CLOSE[c]){
+      const o=CLOSE[c]; let k=st.length-1; while(k>=0&&st[k].c!==o) k--;
+      if(k<0){ out.push({a:i,b:i+1,k:'対応する開きのない閉じカッコ'}); continue; }
+      for(const x of st.splice(k)) if(x.c!==o) out.push({a:x.i,b:x.i+1,k:'閉じていないカッコ'});
+    }
+  }
+  /* 半角の空白：英数字のあいだにあるもの（90度回して入れる部分）は対象外 */
+  for(const x of P){
+    for(let i=x.start;i<x.end;i++){
+      if(doc[i]!==' '||(L.rot&&L.rot[i])) continue;
+      if(i===x.start||doc.slice(x.start,i).every(c=>c===' '||c==='　')) continue;   /* 段落の頭の字下げは対象外 */
+      let j=i+1; while(j<x.end&&doc[j]===' '&&!(L.rot&&L.rot[j])) j++;
+      out.push({a:i,b:j,k:'半角の空白'}); i=j-1;
+    }
+  }
+  /* ルビ・傍点の記号の誤り：「｜」「《」「》」が、正しいルビや傍点の形になっていない */
+  const okMark=new Set();
+  for(const g of rubyRuns(doc)){ if(g.s<g.bs) okMark.add(g.s); okMark.add(g.be); okMark.add(g.re); }
+  for(const g of emphRuns(doc)){ okMark.add(g.s); okMark.add(g.s+1); okMark.add(g.e-2); okMark.add(g.e-1); }
+  for(let i=0;i<n;i++){ const c=doc[i]; if((c==='｜'||c==='《'||c==='》')&&!okMark.has(i)) out.push({a:i,b:i+1,k:'ルビ・傍点の記号の誤り'}); }
+  /* 段落の頭の字下げ漏れ */
+  for(const x of P){
+    if(x.t!=='body'||x.start===x.end) continue;
+    const c=doc[x.start];
+    if(c==='　'||c===' '||OPENERS.has(c)) continue;
+    out.push({a:x.start,b:x.start+1,k:'段落の頭の字下げ漏れ'});
+  }
+  return out.sort((x,y)=>x.a-y.a||x.b-y.b);
+}
+
+let lintT=0;
+function runLint(){
+  clearTimeout(lintT);
+  lintT=setTimeout(()=>{
+    lints=findLints();
+    const sig=lints.map(x=>x.a+'-'+x.b+x.k).join(',')+'|'+doc.length;
+    if(sig!==lintSig){ lintSig=sig; drawLint(); if(tab==='lint') renderLintList(); }
+    $('lintBadge')&&($('lintBadge').textContent=lints.length?String(lints.length):'');
+  },250);
+}
+function drawLint(){
+  if(!showLint||!lints.length||!L||!G){ lintLayer.innerHTML=''; return; }
+  lintLayer.innerHTML=spanBoxes(lints.slice(0,2000).map(x=>[x.a,x.b]));
+}
+function renderLintList(){
+  $('lCount').textContent=lints.length?lints.length+'件':'';
+  $('lEmpty').hidden=lints.length>0;
+  const ni=String(notes.lintIgnore||'').split(',').filter(Boolean).length;
+  $('lIgn').hidden=!ni; $('lIgnN').textContent=`「知らせない」にした箇所：${ni}件`;
+  const sig=lintSig; if(sig===lintListSig) return; lintListSig=sig;
+  const snip=(a,b)=>esc(doc.slice(a,b).join('').replace(/\n/g,'／'));
+  $('lList').innerHTML=lints.slice(0,300).map((x,k)=>`<li><button type="button" data-i="${x.a}"><span class="m">${esc(chapLabel(x.a))}</span><span class="k">${esc(x.k)}</span><span class="s">${snip(Math.max(0,x.a-8),x.a)}<mark>${snip(x.a,x.b)}</mark>${snip(x.b,Math.min(doc.length,x.b+8))}</span></button>${x.fix?`<button type="button" class="lfix" data-f="${k}">修正する</button>`:''}${x.ign?`<button type="button" class="lfix lign" data-g="${esc(x.ign)}">この柱は知らせない</button>`:''}</li>`).join('')
+    +(lints.length>300?`<li class="small">ほか${lints.length-300}件</li>`:'');
+}
+function renderFindList(){
+  const ch=curHit();
+  $('fCount').textContent=fqLen?(hits.length?`${ch>=0?ch+1:'-'} / ${hits.length}件`:'0件'):'';
+  ['fPrev','fNext','fRep','fAll'].forEach(id=>$(id).disabled=!hits.length);
+  const sig=hits.join(',')+'|'+fqLen+'|'+doc.length;
+  if(sig!==fSig){
+    fSig=sig;
+    const snip=(a,b)=>esc(doc.slice(a,b).join('').replace(/\n/g,'／'));
+    $('fList').innerHTML=hits.slice(0,300).map((h,k)=>`<li><button type="button" data-k="${k}"><span class="m">${esc(chapLabel(h))}</span><span class="s">${snip(Math.max(0,h-8),h)}<mark>${snip(h,h+fqLen)}</mark>${snip(h+fqLen,Math.min(doc.length,h+fqLen+8))}</span></button></li>`).join('')
+      +(hits.length>300?`<li class="small">ほか${hits.length-300}件</li>`:'');
+  }
+  [...$('fList').children].forEach((li,k)=>li.classList.toggle('cur',k===ch));
+}
+function selectHit(k){
+  if(!hits.length) return;
+  k=(k+hits.length)%hits.length;
+  anchor=hits[k]; caret=hits[k]+fqLen; lastKind=''; render(); scrollToCaret();
+}
+function goHit(dir){
+  computeHits(); if(!hits.length){ render(); return; }
+  const r=selRange(), from=dir>0?(r?r[1]:caret):(r?r[0]:caret);
+  let k;
+  if(dir>0){ k=hits.findIndex(h=>h>=from); if(k<0) k=0; }
+  else { k=-1; hits.forEach((h,j)=>{ if(h<from) k=j; }); if(k<0) k=hits.length-1; }
+  selectHit(k);
+}
+function replaceOne(){
+  computeHits();
+  const k=curHit();
+  if(k<0){ goHit(1); return; }
+  const rep=[...$('fR').value], h=hits[k];
+  snapshot('replace'); lastKind='';
+  doc.splice(h,fqLen,...rep); anchor=null; caret=h+rep.length;
+  render(); goHit(1);
+}
+function replaceAll(){
+  computeHits(); if(!hits.length) return;
+  const rep=[...$('fR').value], n=hits.length;
+  snapshot('replace'); lastKind='';
+  for(let k=hits.length-1;k>=0;k--) doc.splice(hits[k],fqLen,...rep);
+  anchor=null; caret=Math.min(caret,doc.length);
+  render(); toast(`${n}件を置換しました（「元に戻す」で戻せます）`);
+}
+function openFind(){
+  const r=selRange();
+  if(r&&r[1]-r[0]<=40&&!doc.slice(r[0],r[1]).includes('\n')) $('fQ').value=doc.slice(r[0],r[1]).join('');
+  if(tab!=='find') setTab('find'); else render();
+  $('fQ').focus(); $('fQ').select();
+}
+$('fQ').addEventListener('input',()=>{ render(); });
+$('fQ').addEventListener('keydown',e=>{
+  if(e.isComposing||e.keyCode===229) return;
+  if(e.key==='Enter'){ e.preventDefault(); goHit(e.shiftKey?-1:1); }
+  else if(e.key==='Escape'){ e.preventDefault(); ta.focus({preventScroll:true}); }
+});
+$('fR').addEventListener('keydown',e=>{
+  if(e.isComposing||e.keyCode===229) return;
+  if(e.key==='Enter'){ e.preventDefault(); replaceOne(); }
+  else if(e.key==='Escape'){ e.preventDefault(); ta.focus({preventScroll:true}); }
+});
+$('fPrev').addEventListener('click',()=>goHit(-1));
+$('fNext').addEventListener('click',()=>goHit(1));
+$('fRep').addEventListener('click',replaceOne);
+$('fAll').addEventListener('click',replaceAll);
+$('fList').addEventListener('click',e=>{ const b=e.target.closest('button[data-k]'); if(b) selectHit(+b.dataset.k); });
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&(e.key==='f'||e.key==='F')){ e.preventDefault(); openFind(); }
+});
+/* ---------- editing ---------- */
+function paraAt(pos){ let n=0; for(let k=0;k<pos;k++) if(doc[k]==='\n') n++; return n; }
+/* 元に戻す：長い原稿では、端末のメモリを使いすぎないように残す回数を減らす */
+function undoCap(){ return Math.max(30,Math.min(300,Math.floor(6e6/(doc.length+1)))); }
+function snapshot(kind){
+  const now=Date.now();
+  if(!(kind==='type'&&lastKind===kind&&now-lastT<1200)){
+    undo.push({d:doc.join(''),y:types.slice(),p:pids.slice(),c:caret});
+    while(undo.length>undoCap()) undo.shift();
+  }
+  lastKind=kind; lastT=now; redo=[]; changed=true; docGen++;
+}
+function insertText(str,back){
+  str=str.replace(/\r\n?/g,'\n'); if(!str) return;
+  const lines=str.split('\n');
+  snapshot(str.length>1||selRange()?'paste':'type');
+  removeSel();
+  const p=paraAt(caret);
+  const out=[...lines[0]], nt=[];
+  for(let k=1;k<lines.length;k++){
+    /* 改行で増える段落は本文。複数の行を貼り付けたときは、「第一章」などで始まる行を見出しにする */
+    nt.push(lines.length>2||lines[k]!==''?detect(lines[k]):'body'); out.push('\n',...lines[k]);
+  }
+  types.splice(p+1,0,...nt); pids.splice(p+1,0,...nt.map(()=>newPid()));
+  doc=doc.slice(0,caret).concat(out,doc.slice(caret)); caret+=out.length-(back||0);
+}
+function deleteBack(){
+  if(selRange()){ snapshot('del'); removeSel(); return; }
+  if(caret<=0) return;
+  snapshot('del');
+  if(doc[caret-1]==='\n'){ const p=paraAt(caret); types.splice(p,1); pids.splice(p,1); }
+  doc.splice(caret-1,1); caret--;
+}
+function deleteFwd(){
+  if(selRange()){ snapshot('del'); removeSel(); return; }
+  if(caret>=doc.length) return;
+  snapshot('del');
+  if(doc[caret]==='\n'){ const p=paraAt(caret)+1; types.splice(p,1); pids.splice(p,1); }
+  doc.splice(caret,1);
+}
+/* 段落の書式（本文／見出し）：選択範囲にかかる段落をまとめて変える */
+function setType(t){
+  if(!NAMES[t]) return;
+  const r=selRange();
+  const p0=paraAt(r?r[0]:caret), p1=r?paraAt(Math.max(r[0],r[1]-1)):p0;
+  let same=true; for(let p=p0;p<=p1;p++) if(types[p]!==t) same=false;
+  if(same) return;
+  snapshot('format'); lastKind='';
+  for(let p=p0;p<=p1;p++) types[p]=t;
+  render(); if(!r) scrollToCaret();
+}
+function restore(from,to){
+  if(!from.length) return;
+  to.push({d:doc.join(''),y:types.slice(),p:pids.slice(),c:caret});
+  const s=from.pop(); doc=[...s.d]; types=s.y.slice(); pids=(s.p||[]).slice(); caret=Math.min(s.c,doc.length); lastKind='';
+  fixTypes(); changed=true; docGen++; anchor=null; render(); scrollToCaret();
+}
+function move(i,ext){
+  if(ext){ if(anchor==null) anchor=caret; } else anchor=null;
+  caret=Math.max(0,Math.min(doc.length,i)); if(anchor===caret) anchor=null;
+  lastKind=''; render(); scrollToCaret();
+}
+function idxAt(col,r){
+  for(const x of cellsOf(col)){
+    if(x.rot&&r>=x.r&&r<x.r+x.k) return x.i+Math.min(x.n,(r-x.r)*2);   /* 欧文のマスの中：2文字ごとに区切る */
+    if(x.r>=r) return x.i;
+  }
+  if(r>=ROWS&&col.hang.length) return col.hang[0].i;
+  return col.end;
+}
+function colMove(d,ext){
+  const {c,r}=caretCR(); const nc=c+d;
+  if(nc<0){ move(0,ext); return; }
+  if(nc>=L.cols.length){ move(doc.length,ext); return; }
+  move(idxAt(L.cols[nc],Math.min(r,ROWS)),ext);
+}
+function paraStart(p){
+  if(p<=0) return 0;
+  let n=0; for(let k=0;k<doc.length;k++) if(doc[k]==='\n'&&++n===p) return k+1;
+  return doc.length;
+}
+/* ---------- 範囲選択（マウス・トラックパッドのドラッグ、Shift＋矢印キー） ---------- */
+function selRange(){
+  if(anchor==null||anchor===caret) return null;
+  return [Math.min(anchor,caret),Math.max(anchor,caret)];
+}
+function removeSel(){
+  const r=selRange(); anchor=null; if(!r) return false;
+  let k=0; for(let i=r[0];i<r[1];i++) if(doc[i]==='\n') k++;
+  const p=paraAt(r[0])+1;
+  types.splice(p,k); pids.splice(p,k); doc.splice(r[0],r[1]-r[0]); caret=r[0]; fixTypes();
+  return true;
+}
+/* 傍点：選んだ文字に付ける／カーソルのある傍点を外す */
+function emphTarget(){
+  const r=selRange();
+  if(r){
+    const sel=doc.slice(r[0],r[1]);
+    if(sel.length<1||sel.length>100||sel.some(c=>c==='\n'||c==='｜'||c==='《'||c==='》')) return null;
+    return {a:r[0],b:r[1],g:null};
+  }
+  for(const g of (L&&L.emph)||emphRuns(doc)) if(caret>g.s&&caret<g.e) return {a:g.s,b:g.e,g};
+  return null;
+}
+function toggleEmph(){
+  const t=emphTarget(); if(!t) return;
+  snapshot('emph'); lastKind='';
+  if(t.g){ const inner=doc.slice(t.a+2,t.b-2); doc.splice(t.a,t.b-t.a,...inner); anchor=t.a; caret=t.a+inner.length; }
+  else { const inner=doc.slice(t.a,t.b); doc.splice(t.a,t.b-t.a,'《','《',...inner,'》','》'); anchor=null; caret=t.a+inner.length+4; }
+  render(); scrollToCaret();
+}
+function copyText(text,then){
+  const fb=()=>{ $('fbText').value=text; $('fallback').hidden=false; $('fbText').focus(); $('fbText').select(); };
+  try{ navigator.clipboard.writeText(text).then(()=>{ toast('コピーしました'); if(then) then(); },fb); }catch(e){ fb(); }
+}
+
+/* ---------- キーボード入力（見えない入力欄で受けて原稿に移す） ----------
+   iPad：変換中は入力欄そのもの（縦書き）を見せ、確定のたびに入力欄を空に戻す（以前からの方式。変換候補も正しく表示される）。
+   Mac：確定直後に入力欄を空にすると、日本語入力が直前の文字をもう一度送ることがある。そこで入力欄の中身は残し、
+        前回との差分だけを原稿に反映する。変換中の文字は原稿上の枠に表示する。入力欄を空に戻すのは改行・削除のあとだけ。
+   どちらも、確定前後に続けて届く入力の通知は1回分にまとめてから反映する（途中の状態で原稿を書き換えない）。 */
+const IPAD=navigator.maxTouchPoints>1;
+if(IPAD) document.documentElement.classList.add('ipad');
+/* iPadのホーム画面のアプリ：ツールバーの上の余白（押すと一番上に戻るため、ボタンは置けない場所）に、
+   枚数・文字数（左）、今いる章（中央）、選択中の文字数と保存の状態（右）を表示する。Mac とブラウザのタブでは、これまでどおり右上に出す */
+try{ if(IPAD&&matchMedia('(display-mode: standalone)').matches){
+  document.documentElement.classList.add('ipadapp');
+  const st=document.querySelector('.stats'); $('tiLeft').appendChild(st.firstElementChild); $('tiRight').appendChild($('sLine2'));
+} }catch(e){}
+let lastVal=S, flushT=0, imeOn=false;
+const imeEl=$('ime');
+function resetTA(){ ta.value=S; lastVal=S; ta.classList.remove('clip'); try{ ta.setSelectionRange(1,1); }catch(e){} }
+function flush(fromIme){
+  const v=ta.value; if(v===lastVal){ if(IPAD&&v!==S) resetTA(); return; }
+  const a=[...lastVal], b=[...v];
+  let i=0; while(i<a.length&&i<b.length&&a[i]===b[i]) i++;
+  let j=0; while(j<a.length-i&&j<b.length-i&&a[a.length-1-j]===b[b.length-1-j]) j++;
+  const removed=a.length-i-j, added=b.slice(i,b.length-j).join('');
+  let added2=added;
+  if(swallowKey&&!removed){
+    /* ショートカットのときに日本語入力が受け取った文字（「c」など）が、確定した文字の先頭に残っていれば、押した回数分だけ捨てる */
+    const keys=SWALLOW[swallowKey.k]; let m=swallowKey.n;
+    while(m>0&&added2&&keys.includes(added2[0].toLowerCase())){ added2=added2.slice(1); m--; }
+    swallowKey=null;
+    if(added2!==added){ for(let k=0;k<removed;k++) deleteBack(); if(added2) insertText(added2); lastVal=v; resetTA(); render(); scrollToCaret(); return; }
+  }
+  for(let k=0;k<removed;k++) deleteBack();
+  if(added) insertText(added);
+  lastVal=v;
+  if(IPAD||!v.startsWith(S)||(!fromIme&&(added.includes('\n')||removed>0||b.length>400))) resetTA();
+  render(); scrollToCaret();
+}
+let pendingIme=false;
+function scheduleFlush(fromIme){
+  if(fromIme) pendingIme=true;
+  clearTimeout(flushT);
+  flushT=setTimeout(()=>{ flushT=0; if(composing) return; const f=pendingIme; pendingIme=false; flush(f); },0);
+}
+/* 変換中の文字：入力欄のうち、まだ原稿に移していない末尾の部分 */
+function showIme(data){
+  if(IPAD||!imeOn){ imeEl.hidden=true; return; }
+  let t=data||'';
+  const v=ta.value;
+  if(v.startsWith(lastVal)){ const rest=v.slice(lastVal.length); if(rest.length>=t.length) t=rest; }
+  imeEl.replaceChildren(); if(t){ const sp=document.createElement('span'); sp.textContent=t; imeEl.appendChild(sp); } imeEl.hidden=!t; layoutIme();
+}
+ta.addEventListener('input',e=>{
+  if(syncWait&&!composing){ resetTA(); return; }
+  if(clipPrep){ clipPrep=false; resetTA(); return; }
+  if(composing){ showIme(''); fitTA(); return; }
+  scheduleFlush(false);
+});
+ta.addEventListener('compositionstart',()=>{
+  /* 直前の確定分がまだ反映されていなければ、新しい変換が始まる前に反映しておく */
+  if(flushT){ clearTimeout(flushT); flushT=0; const f=pendingIme; pendingIme=false; flush(f); }
+  composing=true; imeOn=true; imeEl.textContent=''; imeEl.hidden=true;
+  if(IPAD){ ta.classList.add('composing'); fitTA(); }
+});
+ta.addEventListener('compositionupdate',e=>{ showIme(e.data); fitTA(); setTimeout(()=>{ if(imeOn) showIme(''); },0); });
+ta.addEventListener('compositionend',e=>{
+  composing=false; imeOn=false; imeEl.hidden=true; imeEl.textContent='';
+  ta.classList.remove('composing'); placeCaret();
+  scheduleFlush(true);
+});
+/* iPad：日本語入力のときは、Command＋C などを押しても、キーが日本語入力に渡され（keyCode 229）、文字として入力されてしまう。
+   そこでショートカットをエディタが処理し、日本語入力が受け取った1文字は、入力欄をいったん離れて確定させたうえで捨てる */
+let swallowKey=null, roHold=null, roT=0;
+function releaseRO(){
+  clearTimeout(roT); const k=roHold; roHold=null;
+  if(typeof syncWait==='undefined'||!syncWait) ta.readOnly=false;
+  /* 書き込めるようにしてから少したっても変換が始まっていなければ、捨てる予定を取り消す */
+  setTimeout(()=>{ if(!composing&&swallowKey&&swallowKey.k===k){ swallowKey=null; } },700);
+}
+ta.addEventListener('keyup',e=>{ if(roHold&&!e.metaKey&&!e.ctrlKey){ clearTimeout(roT); roT=setTimeout(releaseRO,250); } });
+const SWALLOW={a:['a','あ'],c:['c'],x:['x'],z:['z'],y:['y']};
+function clipSel(cut){
+  const r=selRange(); if(!r||!navigator.clipboard||!navigator.clipboard.writeText) return;
+  navigator.clipboard.writeText(getClip(r[0],r[1])).then(()=>{ if(cut){ snapshot('cut'); removeSel(); render(); scrollToCaret(); } },
+    ()=>toast(cut?'切り取りできませんでした':'コピーできませんでした'));
+}
+function imeShortcut(e){
+  const k=e.key.toLowerCase(); if(!SWALLOW[k]) return false;
+  e.preventDefault();
+  swallowKey={k,n:(swallowKey&&swallowKey.k===k?swallowKey.n:0)+1};
+  /* Command キーを放すまで入力欄を書き込めない状態にして、日本語入力が文字を受け取らないようにする（フォーカスは外さない）。
+     日本語入力は、書き込めない間に受け取れなかった文字を、書き込めるようになった直後に入れることがあるため、放してから少し待って戻す */
+  ta.readOnly=true; roHold=k;
+  clearTimeout(roT); roT=setTimeout(releaseRO,4000);   /* キーを放したことが伝わらない場合に備えて */
+  if(k==='c'||k==='x') clipSel(k==='x');
+  else if(k==='z') e.shiftKey?restore(redo,undo):restore(undo,redo);
+  else if(k==='y') restore(redo,undo);
+  else if(k==='a'){ anchor=0; caret=doc.length; if(!doc.length) anchor=null; render(); }
+  return true;
+}
+ta.addEventListener('keydown',e=>{
+  if(syncWait){ e.preventDefault(); return; }
+  if(IPAD&&(e.metaKey||e.ctrlKey)&&e.keyCode===229&&imeShortcut(e)) return;
+  if(e.isComposing||composing||e.keyCode===229) return;
+  const mod=e.metaKey||e.ctrlKey, k=e.key;
+  if(mod&&(k==='z'||k==='Z')){ e.preventDefault(); e.shiftKey?restore(redo,undo):restore(undo,redo); return; }
+  if(mod&&(k==='y'||k==='Y')){ e.preventDefault(); restore(redo,undo); return; }
+  if(mod&&(k==='1'||k==='2')){ e.preventDefault(); setType(['body','head'][+k-1]); return; }
+  if(mod&&(k==='a'||k==='A')){ e.preventDefault(); anchor=0; caret=doc.length; if(!doc.length) anchor=null; render(); return; }
+  if(mod&&(k==='f'||k==='F')) return;
+  const r=selRange();
+  if(mod&&(k==='c'||k==='C'||k==='x'||k==='X')&&IPAD&&navigator.clipboard&&navigator.clipboard.writeText){
+    /* iPad：入力欄に選択された文字がないと、コピー／切り取りのショートカットが働かず、文字として入力されてしまう。
+       そこで文字の入力を止め、選択範囲をクリップボードに直接書き込む */
+    e.preventDefault();   /* 文字を選んでいないときも、「c」「x」が入力されないように止める */
+    if(!r) return;
+    const cut=k==='x'||k==='X', text=getClip(r[0],r[1]);
+    navigator.clipboard.writeText(text).then(()=>{ if(cut){ snapshot('cut'); removeSel(); render(); scrollToCaret(); } },
+      ()=>toast(cut?'切り取りできませんでした':'コピーできませんでした'));
+    return;
+  }
+  if(mod&&r&&(k==='c'||k==='C'||k==='x'||k==='X')){
+    /* 選択範囲を入力欄に移して選択状態にし、続くコピー／切り取りイベントで中身を渡す */
+    ta.classList.add('clip'); ta.value=getClip(r[0],r[1]); ta.select(); clipPrep=true;
+    setTimeout(()=>{ if(clipPrep){ clipPrep=false; resetTA(); } },80);
+    return;
+  }
+  const arrow=k==='ArrowDown'||k==='ArrowUp'||k==='ArrowLeft'||k==='ArrowRight';
+  if(arrow&&r&&!e.shiftKey){
+    e.preventDefault(); caret=(k==='ArrowUp'||k==='ArrowRight')?r[0]:r[1]; anchor=null; render(); scrollToCaret(); return;
+  }
+  const ext=e.shiftKey;
+  if(k==='ArrowDown'){ e.preventDefault(); move(caret+1,ext); }
+  else if(k==='ArrowUp'){ e.preventDefault(); move(caret-1,ext); }
+  else if(k==='ArrowLeft'){ e.preventDefault(); colMove(1,ext); }
+  else if(k==='ArrowRight'){ e.preventDefault(); colMove(-1,ext); }
+  else if(k==='Delete'){ e.preventDefault(); deleteFwd(); render(); scrollToCaret(); }
+  else if(k==='Backspace'&&r){ e.preventDefault(); deleteBack(); render(); scrollToCaret(); }
+});
+ta.addEventListener('focus',()=>{ caretEl.classList.add('on'); resetTA(); });
+ta.addEventListener('blur',()=>caretEl.classList.remove('on'));
+
+function hitTest(x,y){
+  for(let p=0;p<pages.length;p++){
+    const rc=pages[p].el.getBoundingClientRect();
+    if(y<rc.top||y>rc.bottom||x<rc.left||x>rc.right) continue;
+    const fr=rc.right-x, ly=y-rc.top;
+    let best=0, bd=Infinity;
+    for(let lc=0;lc<PER;lc++){ const d=Math.abs(fr-(colRight(lc)+G.cell/2)); if(d<bd){bd=d;best=lc;} }
+    const r=Math.max(0,Math.min(ROWS,Math.floor((ly-G.pad)/G.cell)));
+    const c=p*PER+best;
+    if(c>=L.cols.length) return doc.length;
+    return idxAt(L.cols[c],r);
+  }
+  return null;
+}
+function onClip(e,cut){
+  const r=selRange(); if(!r||document.activeElement!==ta||!e.clipboardData) return;
+  e.preventDefault(); e.clipboardData.setData('text/plain',getClip(r[0],r[1]));
+  clipPrep=false; resetTA();
+  if(cut){ snapshot('cut'); removeSel(); render(); scrollToCaret(); }
+}
+/* 貼り付け：段落の途中に貼るときは、先頭の書式の記号（「○」や字下げ）を外す。空の段落の先頭に貼るときは、1行目の書式も読み取る */
+/* 貼り付け：空の段落に「第一章」などで始まる1行を貼ったときは、その段落を見出しにする */
+ta.addEventListener('paste',e=>{
+  const cd=e.clipboardData; if(!cd||composing) return;
+  const text=cd.getData('text/plain'); if(!text) return;
+  e.preventDefault(); pasteText(text);
+});
+function pasteText(text){
+  text=text.replace(/\r\n?/g,'\n');
+  const r=selRange(), at=r?r[0]:caret;
+  const p=paraAt(at), pEmpty=(at===0||doc[at-1]==='\n')&&(at===doc.length||doc[at]==='\n')&&!(r&&r[1]>at);
+  const nl=text.indexOf('\n'), first=nl<0?text:text.slice(0,nl);
+  insertText(text);
+  if(pEmpty&&detect(first)==='head') types[p]='head';
+  resetTA(); render(); scrollToCaret();
+}
+
+/* 右クリックのメニュー：カット・コピー・ペースト、ルビ・傍点、書式の切り替え */
+function closeCtx(){ $('ctxMenu').hidden=true; }
+sheets.addEventListener('contextmenu',e=>{
+  if(composing) return;
+  const h=hitPos(e.clientX,e.clientY); if(h==null) return;
+  e.preventDefault();
+  /* 選んだ範囲の外で右クリックしたときは、その位置にカーソルを移す */
+  const r0=selRange();
+  if(!(r0&&h>=r0[0]&&h<=r0[1])){ anchor=null; caret=h; render(); }
+  const r=selRange(), m=$('ctxMenu'), cur=types[paraAt(r?r[0]:caret)];
+  m.querySelector('[data-act="cut"]').disabled=!r;
+  m.querySelector('[data-act="copy"]').disabled=!r;
+  m.querySelector('[data-act="paste"]').disabled=!(navigator.clipboard&&navigator.clipboard.readText);
+  m.querySelector('[data-act="ruby"]').disabled=!rubyTarget();
+  m.querySelector('[data-act="emph"]').disabled=!emphTarget();
+  for(const t of ['body','head']){ const b=m.querySelector(`[data-act="${t}"]`); b.setAttribute('aria-checked',String(cur===t)); }
+  m.hidden=false;
+  const w=m.offsetWidth, hh=m.offsetHeight;
+  m.style.left=Math.max(6,Math.min(e.clientX,innerWidth-w-6))+'px';
+  m.style.top=Math.max(6,Math.min(e.clientY,innerHeight-hh-6))+'px';
+});
+$('ctxMenu').addEventListener('contextmenu',e=>e.preventDefault());
+$('ctxMenu').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-act]'); if(!b||b.disabled) return;
+  const act=b.dataset.act; closeCtx();
+  if(act==='cut'||act==='copy'){
+    const r=selRange(); if(!r) return;
+    navigator.clipboard.writeText(getClip(r[0],r[1])).then(()=>{ if(act==='cut'){ snapshot('cut'); removeSel(); render(); scrollToCaret(); } },
+      ()=>toast(act==='cut'?'カットできませんでした':'コピーできませんでした'));
+    ta.focus({preventScroll:true});
+  }
+  else if(act==='paste'){
+    navigator.clipboard.readText().then(t=>{ if(t){ pasteText(t); } ta.focus({preventScroll:true}); },
+      ()=>toast('ペーストできませんでした。Command＋V をお使いください'));
+  }
+  else if(act==='ruby') openRuby(rubyTarget());
+  else if(act==='emph'){ toggleEmph(); ta.focus({preventScroll:true}); }
+  else { setType(act); ta.focus({preventScroll:true}); }
+});
+document.addEventListener('pointerdown',e=>{ if(!$('ctxMenu').hidden&&!e.target.closest('#ctxMenu')) closeCtx(); },true);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('ctxMenu').hidden) closeCtx(); });
+window.addEventListener('scroll',closeCtx,{passive:true});
+window.addEventListener('resize',closeCtx);
+document.addEventListener('copy',e=>onClip(e,false));
+document.addEventListener('cut',e=>onClip(e,true));
+
+/* マウス用：文字の上半分なら手前、下半分なら後ろにカーソルを置く。ページの外はいちばん近いページに寄せる */
+function hitPos(x,y){
+  let best=null, bd=Infinity;
+  for(let p=0;p<pages.length;p++){
+    const rc=pages[p].el.getBoundingClientRect();
+    const d=y<rc.top?rc.top-y:y>rc.bottom?y-rc.bottom:0;
+    if(d<bd){ bd=d; best={p,rc}; }
+  }
+  if(!best) return null;
+  const {p,rc}=best;
+  const fr=rc.right-Math.max(rc.left,Math.min(rc.right,x)), ly=Math.max(0,Math.min(rc.height,y-rc.top));
+  let lcB=0, cd=Infinity;
+  for(let lc=0;lc<PER;lc++){ const d=Math.abs(fr-(colRight(lc)+G.cell/2)); if(d<cd){cd=d;lcB=lc;} }
+  const c=p*PER+lcB;
+  if(c>=L.cols.length) return doc.length;
+  const col=L.cols[c];
+  const r=Math.max(0,Math.round((ly-G.pad)/G.cell));
+  if(r>ROWS) return col.end;
+  return idxAt(col,r);
+}
+let lastPt=null, scrollRaf=0;
+function dragScroll(){
+  scrollRaf=0;
+  if(!dragging||!lastPt) return;
+  const top=topEdge(), bottom=window.innerHeight;
+  let dy=0;
+  if(lastPt.y<top+24) dy=-Math.max(4,(top+24-lastPt.y)/2);
+  else if(lastPt.y>bottom-24) dy=Math.max(4,(lastPt.y-bottom+24)/2);
+  if(dy){
+    window.scrollBy(0,dy);
+    const h=hitPos(lastPt.x,lastPt.y); if(h!=null&&h!==caret){ caret=h; render(); }
+    scrollRaf=requestAnimationFrame(dragScroll);
+  }
+}
+sheets.addEventListener('pointerdown',e=>{
+  if(e.pointerType!=='mouse'||e.button!==0||composing) return;
+  const h=hitPos(e.clientX,e.clientY); if(h==null) return;
+  e.preventDefault();
+  mouseClick=true; dragging=true; lastKind='';
+  if(e.shiftKey){ if(anchor==null) anchor=caret; } else anchor=h;
+  caret=h;
+  try{ sheets.setPointerCapture(e.pointerId); }catch(err){}
+  render(); ta.focus({preventScroll:true});
+});
+sheets.addEventListener('pointermove',e=>{
+  if(!dragging) return;
+  lastPt={x:e.clientX,y:e.clientY};
+  const h=hitPos(e.clientX,e.clientY);
+  if(h!=null&&h!==caret){ caret=h; render(); }
+  if(!scrollRaf) scrollRaf=requestAnimationFrame(dragScroll);
+});
+function endDrag(){ if(!dragging) return; dragging=false; lastPt=null; if(anchor===caret) anchor=null; render(); }
+sheets.addEventListener('pointerup',endDrag);
+sheets.addEventListener('pointercancel',endDrag);
+
+/* 指：タップでカーソル移動（ドラッグはスクロール） */
+sheets.addEventListener('click',e=>{
+  if(mouseClick){ mouseClick=false; ta.focus({preventScroll:true}); return; }
+  if(composing) return;
+  const h=hitTest(e.clientX,e.clientY);
+  if(h!==null){ caret=h; anchor=null; lastKind=''; render(); }
+  ta.focus({preventScroll:true});
+});
+/* ---------- toolbar ---------- */
+let wasEditing=false;
+document.querySelectorAll('.tools').forEach(t=>{
+  t.addEventListener('pointerdown',()=>{ wasEditing=document.activeElement===ta; });
+  t.addEventListener('mousedown',e=>{ if(e.target.closest('button')) e.preventDefault(); });
+});
+function refocus(){ if(wasEditing) ta.focus({preventScroll:true}); }
+$('tools').addEventListener('click',e=>{
+  const f=e.target.closest('.seg button[data-type]');
+  if(f){ setType(f.dataset.type); refocus(); return; }
+});
+$('bUndo').addEventListener('click',()=>{ restore(undo,redo); refocus(); });
+$('bRedo').addEventListener('click',()=>{ restore(redo,undo); refocus(); });
+
+let toastTimer=0;
+function toast(msg,ms){ const t=$('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.hidden=true,ms||2600); }
+$('fbClose').addEventListener('click',()=>$('fallback').hidden=true);
+titleIn.addEventListener('input',()=>{ title=titleIn.value; markDirty(); saveCache(); });
+
+$('bEmph').addEventListener('click',()=>{ toggleEmph(); refocus(); });
+/* 並べ替え：つまみをドラッグする（目次と人物で共通） */
+function dragList(list,onMove){
+  let drag=null;
+  const scroller=el=>{ for(let e=el;e;e=e.parentElement){ const o=getComputedStyle(e).overflowY; if((o==='auto'||o==='scroll')&&e.scrollHeight>e.clientHeight) return e; } return null; };
+  const targetAt=y=>{ const lis=[...list.children].filter(x=>x.tagName==='LI'); for(let j=0;j<lis.length;j++){ const r=lis[j].getBoundingClientRect(); if(y<r.top+r.height/2) return j; } return lis.length; };
+  const placeLine=t=>{ const lis=[...list.children].filter(x=>x.tagName==='LI'), lr=list.getBoundingClientRect();
+    const y=t<lis.length?lis[t].getBoundingClientRect().top:lis[lis.length-1].getBoundingClientRect().bottom;
+    drag.line.style.top=(y-lr.top-1)+'px'; };
+  list.addEventListener('pointerdown',e=>{
+    const g=e.target.closest('.grip'); if(!g) return;
+    e.preventDefault(); e.stopPropagation();
+    const li=g.closest('li'), k=[...list.children].filter(x=>x.tagName==='LI').indexOf(li); if(k<0) return;
+    const line=document.createElement('div'); line.className='dropline'; list.appendChild(line);
+    drag={k,t:k,li,line,id:e.pointerId,sc:scroller(list),y:e.clientY};
+    li.classList.add('dragging'); g.setPointerCapture(e.pointerId); placeLine(k);
+  });
+  list.addEventListener('pointermove',e=>{
+    if(!drag||e.pointerId!==drag.id) return;
+    drag.y=e.clientY; drag.t=targetAt(e.clientY); placeLine(drag.t);
+    /* 一覧の上下の端に近づいたら、一覧をスクロールする */
+    if(drag.sc){ const r=drag.sc.getBoundingClientRect(); if(e.clientY<r.top+30) drag.sc.scrollTop-=12; else if(e.clientY>r.bottom-30) drag.sc.scrollTop+=12; }
+  });
+  const end=e=>{
+    if(!drag||e.pointerId!==drag.id) return;
+    const d=drag; drag=null; d.li.classList.remove('dragging'); d.line.remove();
+    if(e.type==='pointerup') onMove(d.k,d.t);
+  };
+  list.addEventListener('pointerup',end); list.addEventListener('pointercancel',end);
+  list.addEventListener('click',e=>{ if(e.target.closest('.grip')){ e.preventDefault(); e.stopPropagation(); } },true);
+}
+/* 章の並べ替え：見出しから次の見出しの手前までを丸ごと移す（最初の見出しより前の文章は動かさない） */
+function moveChapter(k,t){
+  const items=olItems, n=items.length; if(k<0||k>=n||t===k||t===k+1) return;
+  const paras=doc.join('').split('\n');
+  const E=(types.length>1&&paras[paras.length-1]==='')?types.length-1:types.length;   /* 末尾の空の行は動かさない */
+  const a=items[k].p, b=k+1<n?items[k+1].p:E;
+  let dest=t<n?items[t].p:E;
+  snapshot('struct'); lastKind='';
+  const bp=paras.splice(a,b-a), bt=types.splice(a,b-a), bi=pids.splice(a,b-a);
+  if(dest>a) dest-=b-a;
+  paras.splice(dest,0,...bp); types.splice(dest,0,...bt); pids.splice(dest,0,...bi);
+  doc=[...paras.join('\n')]; anchor=null; fixTypes();
+  caret=paraStart(dest); render(); showCaretPage();
+  toast('「'+(items[k].text||'見出し')+'」の章を移しました（「元に戻す」で戻せます）',3500);
+}
+dragList($('olList'),moveChapter);
+dragList($('pplList'),movePerson);
+
+/* ---------- 外見：字詰めと行間（この端末に記憶） ---------- */
+function updLookNote(){
+  const n=$('lkNote'); if(!n) return;
+  n.textContent=`いまの画面では、文字の大きさは約${CELL}px、1ページは${PER}行です。文字の大きさは、1行の字数と画面の高さから決まります。1ページの行数を空欄にすると、画面の幅に入るだけの行数になります。`;
+}
+function applyLookUI(){
+  $('lkRows').value=ROWS; $('lkPer').value=PER_SET||'';
+  document.querySelectorAll('#lhSel button').forEach(b=>b.setAttribute('aria-pressed',String(parseFloat(b.dataset.lh)===LH)));
+  updLookNote();
+}
+function relayout(){ render(); resize(); showCaretPage(); }
+$('bLook').addEventListener('click',applyLookUI);
+$('lkRows').addEventListener('change',()=>{
+  let v=parseInt($('lkRows').value,10); if(!(v>0)) v=ROWS; v=Math.max(10,Math.min(60,v));
+  ROWS=v; try{ localStorage.setItem('bunpitu-rows',String(v)); }catch(e){}
+  applyLookUI(); relayout();
+});
+$('lkPer').addEventListener('change',()=>{
+  const s=$('lkPer').value.trim(); let v=parseInt(s,10);
+  PER_SET=s===''||!(v>0)?0:Math.max(4,Math.min(60,v));
+  try{ localStorage.setItem('bunpitu-per',String(PER_SET)); }catch(e){}
+  applyLookUI(); relayout();
+});
+$('lhSel').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-lh]'); if(!b) return;
+  LH=parseFloat(b.dataset.lh); try{ localStorage.setItem('bunpitu-lh',String(LH)); }catch(err){}
+  applyLookUI(); relayout();
+});
+
+/* ---------- 「その他」パネル ---------- */
+const fmtDate=t=>{ if(!t) return ''; const d=new Date(t); return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`; };
+function refreshPanel(){ if(!$('docsPanel').hidden||!$('manPanel').hidden) renderList(); }
+function renderList(){
+  /* 同期 */
+  $('syncOff').hidden=!!CFG; $('syncOut').hidden=!CFG||!!uid; $('syncIn').hidden=!CFG||!uid;
+  if(uid){ $('syEmail').textContent=userEmail; $('syLast').textContent=lastSync?fmtDate(lastSync):'まだ同期していません'; }
+  /* 原稿の一覧 */
+  const items=liveList();
+  $('docList').innerHTML=items.map(x=>{
+    const cur=x.id===curId, t=cur?title:x.title, n=cur?countArr(doc).net:countArr([...(x.d||'')]).net;
+    return `<li class="${cur?'cur':''}"><button type="button" data-id="${x.id}">
+      <span class="t">${esc(t||'無題')}</span>
+      <span class="m">${n.toLocaleString('ja-JP')}文字・${fmtDate(x.updatedAt)}${x.dirty&&CFG&&!x.sample?'・同期待ち':''}</span>
+      ${cur?'<span class="chip">編集中</span>':''}</button></li>`;
+  }).join('');
+}
+$('bDocs').addEventListener('click',async()=>{
+  ta.blur(); $('pDelConfirm').hidden=true; $('pDelete').hidden=false; $('syMsg').textContent='';
+  await saveLocalNow();
+  $('docsPanel').hidden=false; renderList();
+});
+$('bMan').addEventListener('click',async()=>{
+  ta.blur(); $('pDelConfirm').hidden=true; $('pDelete').hidden=false; $('syMsg').textContent='';
+  await saveLocalNow();
+  $('manPanel').hidden=false; renderList();
+});
+function closeDP(){ $('docsPanel').hidden=true; $('manPanel').hidden=true; }
+$('mpClose').addEventListener('click',()=>$('manPanel').hidden=true);
+$('manPanel').addEventListener('click',e=>{ if(e.target===$('manPanel')) $('manPanel').hidden=true; });
+$('pClose').addEventListener('click',()=>closeDP());
+/* ルビのメニュー：選んだ文字に付ける／カーソルのあるルビを直す・外す */
+function rubyTarget(){
+  const r=selRange();
+  if(r){
+    const sel=doc.slice(r[0],r[1]);
+    if(sel.length<1||sel.length>20||sel.some(c=>c==='\n'||c==='｜'||c==='《'||c==='》')) return null;
+    return {a:r[0],b:r[1],base:sel.join(''),read:'',g:null};
+  }
+  for(const g of (L&&L.rubies)||rubyRuns(doc)) if(caret>=g.s&&caret<=g.e) return {a:g.s,b:g.e,base:doc.slice(g.bs,g.be).join(''),read:doc.slice(g.rs,g.re).join(''),g};
+  return null;
+}
+let rubyT=null;
+function openRuby(t){
+  rubyT=t; if(!rubyT) return;
+  ta.blur(); $('rbBase').textContent=rubyT.base; $('rbRead').value=rubyT.read; $('rbDel').hidden=!rubyT.g;
+  $('rbOk').textContent=rubyT.g?'読みを直す':'ルビを付ける';
+  $('rubyPanel').hidden=false; setTimeout(()=>{ $('rbRead').focus(); $('rbRead').select(); },50);
+}
+$('bRuby').addEventListener('click',()=>openRuby(rubyTarget()));
+/* 原稿用紙のルビ（読み）を押すと、そのルビを直す・外す画面を開く */
+sheets.addEventListener('pointerdown',e=>{
+  const el=e.target.closest&&e.target.closest('.ruby[data-c]'); if(!el) return;
+  e.preventDefault(); e.stopPropagation();
+  const ent=(L.rubyAt.get(+el.dataset.c)||[]).find(x=>x.r0===+el.dataset.r), g=ent&&L.rubies.find(x=>x.s===ent.s); if(!g) return;
+  openRuby({a:g.s,b:g.e,base:doc.slice(g.bs,g.be).join(''),read:doc.slice(g.rs,g.re).join(''),g});
+},true);
+sheets.addEventListener('click',e=>{ if(e.target.closest&&e.target.closest('.ruby[data-c]')){ e.preventDefault(); e.stopPropagation(); } },true);
+function closeRuby(){ $('rubyPanel').hidden=true; rubyT=null; ta.focus({preventScroll:true}); }
+function putRuby(chars,caretAt){
+  const t=rubyT; if(!t) return;
+  snapshot('ruby'); lastKind='';
+  doc.splice(t.a,t.b-t.a,...chars); anchor=null; caret=caretAt;
+  markDirty(); render(); closeRuby();
+}
+$('rbOk').addEventListener('click',()=>{
+  const rd=$('rbRead').value.replace(/[｜《》\n]/g,'').trim(); if(!rubyT) return;
+  if(!rd){ $('rbRead').focus(); return; }
+  const chars=['｜',...rubyT.base,'《',...rd,'》'];
+  putRuby(chars,rubyT.a+chars.length);
+});
+$('rbDel').addEventListener('click',()=>{ if(rubyT&&rubyT.g) putRuby([...rubyT.base],rubyT.a+[...rubyT.base].length); });
+$('rbRead').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229){ e.preventDefault(); $('rbOk').click(); } if(e.key==='Escape') closeRuby(); });
+$('rbClose').addEventListener('click',closeRuby);
+
+$('rubyPanel').addEventListener('click',e=>{ if(e.target===$('rubyPanel')) closeRuby(); });
+const HIST_DEV=DEVICE, HIST_CUR=()=>Object.assign(editorRec(),{sample:!!(recs.get(curId)||{}).sample}), HIST_FLUSH=()=>saveLocalNow(), HIST_LIVE=()=>new Set(liveList().map(r=>r.id).concat(curId?[curId]:[]));
+/* ---------- 以前の版（この端末の中だけに残す） ----------
+   原稿を開いたとき・別の端末の変更を受け取る前・書いている途中（30分ごと）に、原稿の全体を自動で残す。
+   残すのは直近の5件と、それより前は30日分を1日1件。「この版に戻す」では、戻す前の状態も版として残してから置き換える */
+const HIST_KEEP=5, HIST_DAYS=30, HIST_EVERY=30*60*1000;
+const HIST_WHY={open:'開いたとき',remote:'別の端末の変更を受け取る前',auto:'書いている途中',deleted:'別の端末で削除される前',before:'以前の版に戻す前',castsync:'人物一覧を登場人物表に合わせる前'};
+let hdb=null, hLastAt=0, hLastVer=-1, histDocId=null, histSel=null;
+function histOpen(){
+  if(hdb) return Promise.resolve(hdb);
+  return new Promise((res,rej)=>{
+    let r; try{ r=indexedDB.open('bunpitu-history',1); }catch(e){ rej(e); return; }
+    r.onupgradeneeded=()=>{ const s=r.result.createObjectStore('snaps',{keyPath:'k',autoIncrement:true}); s.createIndex('doc','doc'); };
+    r.onsuccess=()=>{ hdb=r.result; res(hdb); }; r.onerror=()=>rej(r.error);
+  });
+}
+function htx(rw,fn){
+  return histOpen().then(db=>new Promise((res,rej)=>{
+    const t=db.transaction('snaps',rw), req=fn(t.objectStore('snaps')); let out;
+    if(req) req.onsuccess=()=>{ out=req.result; };
+    t.oncomplete=()=>res(out); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error);
+  }));
+}
+const histOf=id=>htx('readonly',s=>s.index('doc').getAll(id)).then(a=>(a||[]).sort((x,y)=>y.at-x.at));
+function histHash(r){
+  const s=(r.title||'')+'\u0001'+(r.d||'')+'\u0001'+(r.y||'')+'\u0001'+(r.cv?1:0)+'\u0001'+JSON.stringify(r.n||{})+JSON.stringify(r.m||{});
+  let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36)+':'+s.length;
+}
+function histMark(){ hLastAt=Date.now(); hLastVer=editVersion; }
+async function histSave(r,why){
+  if(!r||!r.id||r.sample) return;
+  try{
+    const h=histHash(r), list=await histOf(r.id);
+    if(list[0]&&list[0].h===h) return;   /* 直前の版と同じ内容なら残さない */
+    await htx('readwrite',s=>s.add({doc:r.id,at:Date.now(),why,dev:HIST_DEV(),h,title:r.title||'',d:r.d||'',y:r.y||'',p:r.p||'',m:r.m||{},n:r.n||{},cv:!!r.cv,chars:countArr([...(r.d||'')]).net}));
+    await histPrune(r.id);
+  }catch(e){}
+}
+const dayKey=t=>{ const d=new Date(t); return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate(); };
+async function histPrune(id){
+  const list=await histOf(id), now=Date.now(), keep=new Set(), days=new Set();
+  list.forEach((x,i)=>{
+    if(i<HIST_KEEP){ keep.add(x.k); return; }
+    if(now-x.at>HIST_DAYS*864e5) return;
+    const dk=dayKey(x.at); if(!days.has(dk)){ days.add(dk); keep.add(x.k); }   /* その日の最後の版だけを残す */
+  });
+  const del=list.filter(x=>!keep.has(x.k));
+  if(del.length) await htx('readwrite',s=>{ del.forEach(x=>s.delete(x.k)); });
+}
+/* 削除された原稿の版は、30日たったら消す */
+async function histCleanup(){
+  try{
+    const live=HIST_LIVE(), all=await htx('readonly',s=>s.getAll()), now=Date.now();
+    const del=(all||[]).filter(x=>!live.has(x.doc)&&now-x.at>HIST_DAYS*864e5);
+    if(del.length) await htx('readwrite',s=>{ del.forEach(x=>s.delete(x.k)); });
+  }catch(e){}
+}
+/* 書いている途中：30分ごとに、変更があれば残す */
+setInterval(async()=>{
+  if(!curId||Date.now()-hLastAt<HIST_EVERY||editVersion===hLastVer) return;
+  histMark(); await HIST_FLUSH(); histSave(HIST_CUR(),'auto');
+},60*1000);
+/* 別の端末から届いた変更で、原稿が大きく減ったときに知らせる */
+function histWarnCut(before,after,name){
+  if(before>=200&&after<before*0.7) toast('別の端末の変更で「'+(name||'無題')+'」の文字数が '+before.toLocaleString('ja-JP')+'字から '+after.toLocaleString('ja-JP')+'字に減りました。誤りなら「原稿」→「以前の版」から戻せます',9000);
+}
+function histWhen(t){
+  const d=new Date(t), hm=d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+  const today=dayKey(Date.now()), yest=dayKey(Date.now()-864e5);
+  return (dayKey(t)===today?'今日':dayKey(t)===yest?'昨日':(d.getMonth()+1)+'月'+d.getDate()+'日')+' '+hm;
+}
+async function openHist(id){ histDocId=id||curId; histSel=null; $('histPanel').hidden=false; await renderHist(); }
+async function renderHist(){
+  const ul=$('histList');
+  let all=[]; try{ all=(await htx('readonly',s=>s.getAll()))||[]; }catch(e){ ul.innerHTML='<li class="small hnone">以前の版を読み込めませんでした。</li>'; return; }
+  const mine=all.filter(x=>x.doc===histDocId).sort((a,b)=>b.at-a.at), isCur=histDocId===curId, now=isCur?countArr(doc).net:null;
+  $('histHead').textContent=isCur?'この原稿「'+(title||'無題')+'」':'削除された原稿「'+((mine[0]&&mine[0].title)||'無題')+'」';
+  $('hBack').hidden=isCur;
+  if(!mine.length) ul.innerHTML='<li class="small hnone">まだ以前の版はありません。原稿を開いたときなどに、自動で残ります。</li>';
+  else ul.innerHTML=mine.map(x=>{
+    const dd=now==null?'':x.chars===now?'・今と同じ字数':x.chars>now?'・今より'+(x.chars-now).toLocaleString('ja-JP')+'字多い':'・今より'+(now-x.chars).toLocaleString('ja-JP')+'字少ない';
+    const sel=histSel===x.k, pv=esc((x.d||'').replace(/\n+/g,'／').slice(0,200));
+    return `<li class="${sel?'sel':''}"><button type="button" data-k="${x.k}"><span class="t">${histWhen(x.at)}</span><span class="m">${HIST_WHY[x.why]||''}（${esc(x.dev||'')}）・${x.chars.toLocaleString('ja-JP')}字${dd}</span></button>`+
+      (sel?`<div class="hdet"><div class="hprev">${pv||'（本文なし）'}</div><div class="pbtns">${isCur?`<button type="button" data-cmp="${x.k}">今の原稿と比べる</button>`:''}<button type="button" class="solid" data-restore="${x.k}">この版に戻す</button></div></div>`:'')+'</li>';
+  }).join('');
+  const live=HIST_LIVE(), dead=new Map();
+  all.forEach(x=>{ if(!live.has(x.doc)){ const o=dead.get(x.doc); if(!o||o.at<x.at) dead.set(x.doc,x); } });
+  $('histDeadG').hidden=!dead.size;
+  $('histDead').innerHTML=[...dead.values()].sort((a,b)=>b.at-a.at).map(x=>`<li><button type="button" data-doc="${esc(String(x.doc))}"><span class="t">${esc(x.title||'無題')}</span><span class="m">最後の版：${histWhen(x.at)}</span></button></li>`).join('');
+}
+async function histRestore(k){
+  let x=null; try{ x=await htx('readonly',s=>s.get(k)); }catch(e){}
+  if(!x){ toast('この版を読み込めませんでした'); return; }
+  const when=histWhen(x.at);
+  $('histPanel').hidden=true; closeDP();
+  const o={t:x.title||'',d:x.d||'',y:decodeTypes(x.y),pids:decPids(x.p),memos:x.m||{},cover:!!x.cv,notes:x.n||{}};
+  if(x.doc===curId){
+    /* 今の原稿を、選んだ版で置き換える（置き換える前の状態は版として残す） */
+    await HIST_FLUSH(); await histSave(HIST_CUR(),'before');
+    setDoc(Object.assign({id:curId,c:0},o)); markDirty();
+    histMark(); render(); window.scrollTo(0,0);
+    toast(when+'の版に戻しました。戻す前の状態も「以前の版」に残しています',5000);
+  } else {
+    /* 削除された原稿：その版を原稿として作り直す */
+    await newDoc(o); histMark(); render(); window.scrollTo(0,0);
+    toast('削除された原稿を、'+when+'の版で作り直しました',5000);
+  }
+}
+$('pHist').addEventListener('click',()=>openHist(curId));
+$('hClose').addEventListener('click',()=>$('histPanel').hidden=true);
+$('hBack').addEventListener('click',()=>{ histDocId=curId; histSel=null; renderHist(); });
+$('histPanel').addEventListener('click',e=>{ if(e.target===$('histPanel')) $('histPanel').hidden=true; });
+$('histList').addEventListener('click',e=>{
+  const rb=e.target.closest('[data-restore]'); if(rb){ histRestore(Number(rb.dataset.restore)); return; }
+  const cb=e.target.closest('[data-cmp]'); if(cb){ openCompare(Number(cb.dataset.cmp)); return; }
+  const b=e.target.closest('[data-k]'); if(!b) return;
+  const k=Number(b.dataset.k); histSel=histSel===k?null:k; renderHist();
+});
+$('histDead').addEventListener('click',e=>{ const b=e.target.closest('[data-doc]'); if(!b) return; histDocId=b.dataset.doc; histSel=null; renderHist(); });
+/* 集中モード（この端末に記憶） */
+function setFocusMode(on){
+  /* 切り替える前に画面に出ていたページを、切り替えたあとも表示する（カーソルのページには飛ばない） */
+  const k=pages.length?curPageIdx():0;
+  document.documentElement.classList.toggle('focus',on);
+  try{ localStorage.setItem('bunpitu-focus',on?'1':''); }catch(e){}
+  resize(); render();
+  if(pages[k]){ const barB=topEdge(); window.scrollBy(0,pages[k].el.getBoundingClientRect().top-barB-GAP); }
+  updPageNav(); ta.focus({preventScroll:true});
+}
+$('bFocus').addEventListener('click',()=>setFocusMode(true));
+$('bFocusOff').addEventListener('click',()=>setFocusMode(false));
+/* ボタンを押してもボタン自体にフォーカスを移さない（iPadでマウスを使うと、上部に固定したツールバーのボタンにフォーカスが移り、
+   画面がいちばん上までスクロールしてしまうため）。pointerdown で止めると mousedown が届かなくなるので、mousedown で止める */
+$('bFocusOff').addEventListener('mousedown',e=>e.preventDefault());
+/* 左パネル（上部に固定）のボタンも同じ理由で、押してもフォーカスを移さない */
+$('outline').addEventListener('mousedown',e=>{ if(e.target.closest('button')) e.preventDefault(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&document.documentElement.classList.contains('focus')&&[...document.querySelectorAll('.scrim')].every(s=>s.hidden)) setFocusMode(false); });
+/* 版どうしの比較：選んだ版と今の原稿を行ごとに比べ、変わった行は文字ごとに比べて、増えた部分と消えた部分を色分けして示す */
+function lcsOps(a,b,eq){
+  /* a と b の共通部分（最長共通部分列）を求め、同じ・消えた・増えたの並びを返す */
+  eq=eq||((x,y)=>x===y);
+  let s=0; while(s<a.length&&s<b.length&&eq(a[s],b[s])) s++;
+  let e=0; while(e<a.length-s&&e<b.length-s&&eq(a[a.length-1-e],b[b.length-1-e])) e++;
+  const A=a.slice(s,a.length-e), B=b.slice(s,b.length-e), n=A.length, m=B.length, ops=[];
+  for(let k=0;k<s;k++) ops.push(['=',k,k]);
+  if(n*m>6e6){ for(let i=0;i<n;i++) ops.push(['-',s+i,-1]); for(let j=0;j<m;j++) ops.push(['+',-1,s+j]); }   /* 大きすぎるときは、まとめて置き換わったものとして扱う */
+  else{
+    const W=m+1, dp=new Uint32Array((n+1)*W);
+    for(let i=n-1;i>=0;i--) for(let j=m-1;j>=0;j--) dp[i*W+j]=eq(A[i],B[j])?dp[(i+1)*W+j+1]+1:Math.max(dp[(i+1)*W+j],dp[i*W+j+1]);
+    let i=0,j=0;
+    while(i<n&&j<m){ if(eq(A[i],B[j])){ ops.push(['=',s+i,s+j]); i++; j++; } else if(dp[(i+1)*W+j]>=dp[i*W+j+1]){ ops.push(['-',s+i,-1]); i++; } else { ops.push(['+',-1,s+j]); j++; } }
+    while(i<n){ ops.push(['-',s+i,-1]); i++; } while(j<m){ ops.push(['+',-1,s+j]); j++; }
+  }
+  for(let k=0;k<e;k++) ops.push(['=',a.length-e+k,b.length-e+k]);
+  return ops;
+}
+function charDiffHtml(x,y){
+  const a=[...x], b=[...y], ops=lcsOps(a,b); let h='', run='', rt='';
+  const flush=()=>{ if(!run) return; h+=rt==='='?esc(run):rt==='-'?`<del>${esc(run)}</del>`:`<ins>${esc(run)}</ins>`; run=''; };
+  let add=0, del=0;
+  for(const [t,i,j] of ops){ if(t!==rt){ flush(); rt=t; } const ch=t==='+'?b[j]:a[i]; run+=ch; if(t==='+') add++; else if(t==='-') del++; }
+  flush(); return {h,add,del};
+}
+async function openCompare(k){
+  let x=null; try{ x=await htx('readonly',s=>s.get(k)); }catch(e){}
+  if(!x){ toast('この版を読み込めませんでした'); return; }
+  const A=(x.d||'').split('\n'), B=doc.join('').split('\n'), ops=lcsOps(A,B);
+  /* 変わった行のまとまり（前後1行を含む）を作る */
+  const hunks=[]; let cur=null;
+  ops.forEach((o,idx)=>{
+    if(o[0]==='='){ if(cur){ cur.tail.push(o); if(cur.tail.length>=1){ hunks.push(cur); cur=null; } } return; }
+    if(!cur){ cur={pre:idx>0&&ops[idx-1][0]==='='?[ops[idx-1]]:[],body:[],tail:[]}; }
+    cur.body.push(o);
+  });
+  if(cur) hunks.push(cur);
+  let addT=0, delT=0, html='';
+  for(const hk of hunks){
+    const firstB=(hk.body.find(o=>o[2]>=0)||hk.tail[0]||hk.pre[0]||[0,0,Math.max(0,B.length-1)])[2];
+    const at=paraStart(Math.min(firstB,types.length-1));
+    let rows=hk.pre.map(o=>`<div class="cl eq">${esc(B[o[2]])||'&nbsp;'}</div>`).join('');
+    /* 消えた行と増えた行を順に組にして、文字ごとに比べる */
+    const dels=hk.body.filter(o=>o[0]==='-').map(o=>A[o[1]]), adds=hk.body.filter(o=>o[0]==='+').map(o=>B[o[2]]);
+    const pair=Math.min(dels.length,adds.length);
+    for(let q=0;q<pair;q++){ const r=charDiffHtml(dels[q],adds[q]); addT+=r.add; delT+=r.del; rows+=`<div class="cl chg">${r.h||'&nbsp;'}</div>`; }
+    for(let q=pair;q<dels.length;q++){ delT+=[...dels[q]].length; rows+=`<div class="cl rm"><del>${esc(dels[q])||'（空の行）'}</del></div>`; }
+    for(let q=pair;q<adds.length;q++){ addT+=[...adds[q]].length; rows+=`<div class="cl ad"><ins>${esc(adds[q])||'（空の行）'}</ins></div>`; }
+    rows+=hk.tail.map(o=>`<div class="cl eq">${esc(B[o[2]])||'&nbsp;'}</div>`).join('');
+    html+=`<div class="hunk"><div class="hh"><span>${esc(chapLabel(at))}</span><button type="button" data-at="${at}">この場所へ</button></div>${rows}</div>`;
+  }
+  $('cmpHead').textContent=histWhen(x.at)+'の版 → 今の原稿';
+  $('cmpSum').innerHTML=hunks.length?`変わった箇所 ${hunks.length}か所　<ins>増えた ${addT.toLocaleString('ja-JP')}字</ins>　<del>消えた ${delT.toLocaleString('ja-JP')}字</del>`+((x.title||'')!==(title||'')?`<br>題名：<del>${esc(x.title||'（なし）')}</del> → <ins>${esc(title||'（なし）')}</ins>`:''):'本文は、この版と今の原稿で同じです。'+((x.title||'')!==(title||'')?`<br>題名：<del>${esc(x.title||'（なし）')}</del> → <ins>${esc(title||'（なし）')}</ins>`:'');
+  $('cmpBody').innerHTML=html;
+  $('cmpPanel').hidden=false; $('cmpBody').scrollTop=0;
+}
+$('cmpClose').addEventListener('click',()=>$('cmpPanel').hidden=true);
+$('cmpPanel').addEventListener('click',e=>{
+  if(e.target===$('cmpPanel')){ $('cmpPanel').hidden=true; return; }
+  const b=e.target.closest('button[data-at]'); if(!b) return;
+  $('cmpPanel').hidden=true; $('histPanel').hidden=true; closeDP();
+  jumpTo(+b.dataset.at);
+});
+/* ページ送り：いま画面に出ているページから、1ページ・10ページ単位で前後のページへ移る（カーソルは動かさない） */
+function curPageIdx(){
+  /* ページは同じ大きさで等間隔に並ぶので、先頭の2ページの位置から計算する */
+  const n=pages.length; if(!n) return 0;
+  const barB=topEdge(), r0=pages[0].el.getBoundingClientRect(), pitch=n>1?pages[1].el.getBoundingClientRect().top-r0.top:r0.height+GAP;
+  if(!(pitch>0)) return 0;
+  return Math.max(0,Math.min(n-1,Math.round((barB+GAP-r0.top)/pitch)));
+}
+function goPage(delta){
+  if(!pages.length) return;
+  const k=Math.max(0,Math.min(pages.length-1,curPageIdx()+delta));
+  const barB=topEdge();
+  window.scrollBy(0,pages[k].el.getBoundingClientRect().top-barB-GAP);
+  updPageNav();
+}
+function updPageNav(){
+  if(!pages.length) return;
+  const k=curPageIdx(), last=pages.length-1;
+  $('pgUp1').disabled=$('pgUp10').disabled=k<=0;
+  $('pgDn1').disabled=$('pgDn10').disabled=k>=last;
+}
+[['pgUp1',-1],['pgUp10',-10],['pgDn1',1],['pgDn10',10]].forEach(([id,n])=>{
+  $(id).addEventListener('click',()=>goPage(n));
+});
+{ let raf=0; window.addEventListener('scroll',()=>{ if(!raf) raf=requestAnimationFrame(()=>{ raf=0; updPageNav(); }); },{passive:true}); }
+$('bLook').addEventListener('click',()=>{ ta.blur(); $('lookPanel').hidden=false; });
+$('lpClose').addEventListener('click',()=>$('lookPanel').hidden=true);
+$('lookPanel').addEventListener('click',e=>{ if(e.target===$('lookPanel')) $('lookPanel').hidden=true; });
+
+$('docsPanel').addEventListener('click',e=>{ if(e.target===$('docsPanel')) closeDP(); });
+/* ログインの入力欄は、「その他」を開いてログイン画面を表示している間だけ置く。
+   ページにパスワード欄があると、iPadのSafariが本文の入力中にもパスワードの候補を出すため */
+const SY_FIELDS='<input id="syMail" type="email" inputmode="email" placeholder="メールアドレス" autocomplete="email" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="メールアドレス">'+
+  '<input id="syPass" type="password" placeholder="パスワード（6文字以上）" autocomplete="current-password" aria-label="パスワード">';
+function syncFields(){
+  const want=!$('docsPanel').hidden&&!$('syncOut').hidden, box=$('syFields');
+  if(want&&!box.firstChild) box.innerHTML=SY_FIELDS;
+  else if(!want&&box.firstChild) box.innerHTML='';
+}
+new MutationObserver(syncFields).observe($('docsPanel'),{attributes:true,attributeFilter:['hidden']});
+new MutationObserver(syncFields).observe($('syncOut'),{attributes:true,attributeFilter:['hidden']});
+$('docsPanel').addEventListener('click',e=>{ if(e.target===$('docsPanel')) closeDP(); });
+$('docList').addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-id]'); if(!b) return;
+  closeDP();
+  if(b.dataset.id!==curId) await openDoc(b.dataset.id);
+});
+$('pNew').addEventListener('click',async()=>{ closeDP(); await newDoc(); });
+$('pDelete').addEventListener('click',()=>{ $('pDelete').hidden=true; $('pDelConfirm').hidden=false; });
+$('pDelNo').addEventListener('click',()=>{ $('pDelete').hidden=false; $('pDelConfirm').hidden=true; });
+$('pDelYes').addEventListener('click',async()=>{ $('pDelete').hidden=false; $('pDelConfirm').hidden=true; closeDP(); await deleteCurrent(); });
+$('pCopy').addEventListener('click',()=>copyText(plainOut(getPlain(0,doc.length))));
+
+/* ファイルの保存：iPadは共有シート（「ファイル」に保存など）、Macはダウンロード */
+const fileName=ext=>(title||'無題').replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_').slice(0,80)+ext;
+async function saveFile(name,data,type){
+  const blob=data instanceof Blob?data:new Blob([data],{type});
+  if(navigator.maxTouchPoints>1&&navigator.canShare){
+    try{
+      const file=new File([blob],name,{type:blob.type||type});
+      if(navigator.canShare({files:[file]})){ await navigator.share({files:[file]}); return; }
+    }catch(e){ if(e&&e.name==='AbortError') return; }
+  }
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+$('pTxt').addEventListener('click',()=>saveFile(fileName('.txt'),plainOut(getPlain(0,doc.length)),'text/plain;charset=utf-8'));
+
+/* テキストの読み込み */
+$('pImport').addEventListener('click',()=>$('fileIn').click());
+async function readText(f){
+  const buf=await f.arrayBuffer();
+  try{ return new TextDecoder('utf-8',{fatal:true}).decode(buf); }catch(e){ return new TextDecoder('shift_jis').decode(buf); }
+}
+$('fileIn').addEventListener('change',async()=>{
+  const f=$('fileIn').files[0]; $('fileIn').value=''; if(!f) return;
+  let text; try{ text=await readText(f); }catch(e){ toast('このファイルの文字コードは読み込めません'); return; }
+  const r=fromPlain(text);
+  closeDP();
+  await newDoc({t:f.name.replace(/\.[^.]+$/,''),d:r.d,y:r.y});
+  toast('「'+(title||'無題')+'」として読み込みました');
+});
+
+/* バックアップ：すべての原稿を、人物・メモごとJSONで書き出す／読み込む */
+$('pBackup').addEventListener('click',async()=>{
+  await saveLocalNow();
+  const docs=liveList().map(r=>({id:r.id,title:r.title||'',d:r.d||'',y:r.y||'',p:r.p||'',n:r.n||{},c:r.c||0,updatedAt:r.updatedAt}));
+  const d=new Date(), stamp=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  await saveFile(`Bunpitu-backup-${stamp}.json`,JSON.stringify({app:'bunpitu',version:1,exportedAt:Date.now(),docs}),'application/json');
+});
+$('pRestore').addEventListener('click',()=>$('jsonIn').click());
+$('jsonIn').addEventListener('change',async()=>{
+  const f=$('jsonIn').files[0]; $('jsonIn').value=''; if(!f) return;
+  let data; try{ data=JSON.parse(await readText(f)); }catch(e){ toast('バックアップのファイルを読み込めませんでした'); return; }
+  if(!data||data.app!=='bunpitu'||!Array.isArray(data.docs)){ toast('Bunpituのバックアップではありません'); return; }
+  await saveLocalNow();
+  let added=0, same=0;
+  for(const x of data.docs){
+    if(typeof x.d!=='string') continue;
+    const ex=recs.get(x.id);
+    if(ex&&!ex.deleted&&ex.d===x.d&&ex.title===x.title&&JSON.stringify(ex.n||{})===JSON.stringify(x.n||{})){ same++; continue; }
+    const id=ex?newId():(x.id||newId());   /* 同じ原稿があって中身が違うときは、別の原稿として追加 */
+    const r={id,title:(x.title||'')+(ex?'（バックアップ）':''),d:x.d,y:x.y||'',p:x.p||'',n:x.n||{},c:x.c||0,
+      updatedAt:x.updatedAt||Date.now(),dirty:true,remoteAt:0,rparts:0,deleted:false};
+    recs.set(id,r); await idbPut(r); added++;
+  }
+  /* 最初に入っていたサンプル原稿は、手を入れていなければ片付ける */
+  for(const r of [...recs.values()]) if(r.sample&&r.id!==curId){ recs.delete(r.id); await idbDel(r.id); }
+  const cur=recs.get(curId);
+  if(cur&&cur.sample&&added){ recs.delete(cur.id); await idbDel(cur.id); loadRec(liveList()[0]); render(); }
+  renderList(); schedulePush(500);
+  toast(`${added}件の原稿を読み込みました`+(same?`（同じ内容の${same}件は省略）`:''));
+});
+
+/* 同期のログイン */
+const AUTH_MSG={'auth/invalid-email':'メールアドレスの形式が正しくありません','auth/missing-password':'パスワードを入力してください',
+  'auth/weak-password':'パスワードは6文字以上にしてください','auth/email-already-in-use':'このメールアドレスは登録済みです。「ログイン」をお使いください',
+  'auth/invalid-credential':'メールアドレスかパスワードが違います','auth/wrong-password':'メールアドレスかパスワードが違います',
+  'auth/user-not-found':'このメールアドレスは登録されていません','auth/too-many-requests':'試行回数が多すぎます。しばらく待ってからお試しください',
+  'auth/network-request-failed':'通信できません。インターネットへの接続を確かめてください','auth/operation-not-allowed':'Firebaseで「メール/パスワード」のログインが有効になっていません'};
+const authMsg=e=>AUTH_MSG[e&&e.code]||('ログインできませんでした（'+((e&&e.code)||'不明なエラー')+'）');
+async function doAuth(kind){
+  const em=$('syMail').value.trim(), pw=$('syPass').value;
+  $('syMsg').textContent='';
+  try{
+    if(kind==='signup') await FB.createUserWithEmailAndPassword(auth,em,pw);
+    else await FB.signInWithEmailAndPassword(auth,em,pw);
+    $('syPass').value=''; toast(kind==='signup'?'登録しました。同期を始めます':'ログインしました。同期を始めます');
+  }catch(e){ $('syMsg').textContent=authMsg(e); }
+}
+$('syLogin').addEventListener('click',()=>doAuth('login'));
+$('sySignup').addEventListener('click',()=>doAuth('signup'));
+$('syForgot').addEventListener('click',async()=>{
+  const em=$('syMail').value.trim();
+  if(!em){ $('syMsg').textContent='メールアドレスを入力してから押してください'; return; }
+  try{ await FB.sendPasswordResetEmail(auth,em); $('syMsg').textContent='パスワード再設定のメールを送りました'; }
+  catch(e){ $('syMsg').textContent=authMsg(e); }
+});
+$('syNow').addEventListener('click',async()=>{ await saveLocalNow(); await pushAll(); renderList(); toast(saveErr?'同期できませんでした。しばらくしてからお試しください':'同期しました'); });
+$('syLogout').addEventListener('click',async()=>{
+  await saveLocalNow(); await pushAll();
+  try{ await FB.signOut(auth); }catch(e){}
+  toast('ログアウトしました。原稿はこの端末に残っています');
+});
+let rzT=0;
+window.addEventListener('resize',()=>{ clearTimeout(rzT); rzT=setTimeout(resize,120); });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'&&dirty&&mode==='server'){ clearTimeout(syncT); syncNow(); } });
+
+/* ページ番号の表示・非表示（この端末に記憶） */
+let showPno=true;
+try{ showPno=localStorage.getItem('bunpitu-pno')!=='0'; }catch(e){}
+function applyPno(){ document.documentElement.classList.toggle('nopno',!showPno); $('pPno').checked=showPno; }
+$('pPno').addEventListener('change',()=>{ showPno=$('pPno').checked; try{ localStorage.setItem('bunpitu-pno',showPno?'1':'0'); }catch(e){} applyPno(); });
+applyPno();
+
+/* 配色：端末の設定に合わせる／ライト／ダーク（この端末に記憶） */
+let themeKey='auto';
+try{ const t=localStorage.getItem('bunpitu-theme'); if(t==='light'||t==='dark') themeKey=t; }catch(e){}
+const darkMQ=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;
+function applyTheme(){
+  const root=document.documentElement;
+  if(themeKey==='auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme',themeKey);
+  document.querySelectorAll('#themeSel button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.theme===themeKey)));
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta){ const dark=themeKey==='dark'||(themeKey==='auto'&&darkMQ&&darkMQ.matches); meta.setAttribute('content',dark?'#181D1E':'#F5F6F6'); }
+}
+$('themeSel').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-theme]'); if(!b) return;
+  themeKey=b.dataset.theme; try{ localStorage.setItem('bunpitu-theme',themeKey); }catch(e){}
+  applyTheme();
+});
+if(darkMQ&&darkMQ.addEventListener) darkMQ.addEventListener('change',applyTheme);
+applyTheme();
+
+/* 書体：明朝体／ゴシック体（この端末に記憶） */
+let fontKey='mincho';
+try{ if(localStorage.getItem('bunpitu-font')==='gothic') fontKey='gothic'; }catch(e){}
+let weightKey='light';
+try{ const w=localStorage.getItem('bunpitu-weight'); if(w==='regular'||w==='medium') weightKey=w; }catch(e){}
+function applyFont(){
+  document.documentElement.classList.toggle('gothic',fontKey==='gothic');
+  document.documentElement.classList.toggle('wregular',weightKey==='regular');
+  document.documentElement.classList.toggle('wmedium',weightKey==='medium');
+  document.querySelectorAll('#fontSel button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.font===fontKey)));
+  document.querySelectorAll('#weightSel button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.weight===weightKey)));
+}
+$('weightSel').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-weight]'); if(!b) return;
+  weightKey=b.dataset.weight; try{ localStorage.setItem('bunpitu-weight',weightKey); }catch(err){}
+  applyFont(); if(typeof fitTA==='function') fitTA();
+});
+$('fontSel').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-font]'); if(!b) return;
+  fontKey=b.dataset.font; try{ localStorage.setItem('bunpitu-font',fontKey); }catch(err){}
+  applyFont(); if(typeof fitTA==='function') fitTA();
+});
+applyFont();
+/* 校正の色付けの表示・非表示（この端末に記憶） */
+let showLint=true;
+try{ showLint=localStorage.getItem('bunpitu-lint')!=='0'; }catch(e){}
+function applyLint(){ document.documentElement.classList.toggle('nolint',!showLint); $('pLint').checked=showLint; drawLint(); }
+$('pLint').addEventListener('change',()=>{ showLint=$('pLint').checked; try{ localStorage.setItem('bunpitu-lint',showLint?'1':'0'); }catch(e){} applyLint(); });
+applyLint();
+/* ---------- 起動 ---------- */
+async function boot(){
+  try{ idb=await idbOpen(); }catch(e){ idb=null; saveErr='local'; }
+  try{ for(const r of (await idbAll())||[]) recs.set(r.id,r); }catch(e){}
+  let cur=null; try{ cur=await kvGet('current'); }catch(e){}
+  let r=cur&&recs.get(cur); if(!r||r.deleted) r=liveList()[0];
+  if(!r){
+    /* 初回はサンプル原稿を表示（書き足すまでは同期しない） */
+    r={id:newId(),title:SAMPLE_TITLE,d:SAMPLE_DATA.d,y:SAMPLE_DATA.y.map(t=>CODE[t]).join(''),p:'',n:{},c:0,
+      updatedAt:Date.now(),dirty:false,remoteAt:0,rparts:0,deleted:false,sample:true};
+    recs.set(r.id,r); idbPut(r).catch(()=>{});
+  }
+  loadRec(r); G=geo(); setTab(tab); render(); resize(); computeK(); updateStats(); olSig=''; updatePanels(); updateSave();
+  histSave(HIST_CUR(),'open'); histMark(); histCleanup();
+  initFirebase();
+}
+boot();
+})();
+
+</script>
+</body>
+</html>
