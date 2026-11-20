@@ -441,6 +441,8 @@ html.ipad #ta{caret-color:transparent}
 html.ipad #caret{display:block}
 html.ipad.composing #caret{display:none}
 html.ipad.composing #ta{caret-color:var(--caret)}
+/* カーソルの点滅：端末が「視差効果を減らす」設定でも点滅させる（点滅しないと位置を見失いやすいため） */
+@media (prefers-reduced-motion: reduce){ #caret.on{animation:blink 1.05s steps(1) infinite} }
 /* ---------- ウェブアプリ版：同期のログインと、同期の確認中の表示（Hongaki と同じ） ---------- */
 .sybox{display:flex;flex-direction:column;gap:8px}
 .sybox input{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--edge);border-radius:7px;background:var(--paper);color:var(--ink)}
@@ -596,7 +598,7 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
       </div>
     </div>
     <div class="small">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
-    <div class="small">Version 1.01</div>
+    <div class="small">Version 1.02</div>
   </div>
 </div>
 <div class="scrim" id="manPanel" hidden>
