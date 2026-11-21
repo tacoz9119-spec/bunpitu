@@ -452,6 +452,11 @@ html.ipad.composing #ta{caret-color:var(--caret)}
 .pdres.warn{background:color-mix(in srgb,#C98A12 16%,var(--paper))}
 .pdgo{justify-content:flex-end}
 #pdPre button[aria-pressed="true"],#pdSizes button[aria-pressed="true"],#pdFont button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+/* 目次の並べ替え：つかんだ行は影つきで浮かせ、ほかの行はなめらかにずらしてすき間を空ける */
+#olList.sorting{-webkit-user-select:none;user-select:none}
+#olList li.shifting{transition:transform .16s ease}
+#olList li.lifting{position:relative;z-index:5;background:var(--paper);border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.18),0 1px 3px rgba(0,0,0,.12);transition:none;opacity:1}
+#olList li.lifting .grip{cursor:grabbing;opacity:1}
 /* ---------- ウェブアプリ版：同期のログインと、同期の確認中の表示（Hongaki と同じ） ---------- */
 .sybox{display:flex;flex-direction:column;gap:8px}
 .sybox input{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--edge);border-radius:7px;background:var(--paper);color:var(--ink)}
@@ -615,7 +620,7 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
       </div>
     </div>
     <div class="small">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
-    <div class="small">Version 1.07</div>
+    <div class="small">Version 1.08</div>
   </div>
 </div>
 <div class="scrim" id="manPanel" hidden>
@@ -2522,32 +2527,70 @@ titleIn.addEventListener('input',()=>{ title=titleIn.value; markDirty(); saveCac
 
 $('bEmph').addEventListener('click',()=>{ toggleEmph(); refocus(); });
 $('bBrk').addEventListener('click',()=>{ insertBreak(); refocus(); });
-/* 並べ替え：つまみをドラッグする（目次） */
+/* 並べ替え：つまみをドラッグする（目次）。
+   つかんだ行は影つきで浮かせて指やマウスについて動かし、ほかの行の真ん中を越えると、その行がなめらかにずれて入る位置にすき間が空く。
+   各行の位置は、つかんだときに一覧の中の座標で覚えておき、スクロールした量と合わせて計算する（スクロールしても位置がずれない） */
 function dragList(list,onMove){
   let drag=null;
   const scroller=el=>{ for(let e=el;e;e=e.parentElement){ const o=getComputedStyle(e).overflowY; if((o==='auto'||o==='scroll')&&e.scrollHeight>e.clientHeight) return e; } return null; };
-  const targetAt=y=>{ const lis=[...list.children].filter(x=>x.tagName==='LI'); for(let j=0;j<lis.length;j++){ const r=lis[j].getBoundingClientRect(); if(y<r.top+r.height/2) return j; } return lis.length; };
-  const placeLine=t=>{ const lis=[...list.children].filter(x=>x.tagName==='LI'), lr=list.getBoundingClientRect();
-    const y=t<lis.length?lis[t].getBoundingClientRect().top:lis[lis.length-1].getBoundingClientRect().bottom;
-    drag.line.style.top=(y-lr.top-1)+'px'; };
+  const items=()=>[...list.children].filter(x=>x.tagName==='LI');
+  const scrollOf=d=>d.sc?d.sc.scrollTop:0;
+  /* 指の位置（一覧の中の座標）：つかんだときの一覧の位置から、その後のスクロール量を引いて求める */
+  const yIn=(d,clientY)=>clientY-(d.listTop-(scrollOf(d)-d.sc0));
+  function update(d){
+    const dy=yIn(d,d.y)-d.y0, me=d.rows[d.k], mid=me.top+me.h/2+dy;
+    me.el.style.transform=`translateY(${dy}px)`;
+    let to=d.k;
+    d.rows.forEach((r,j)=>{
+      if(j===d.k) return;
+      const c=r.top+r.h/2; let sh=0;
+      if(j<d.k&&mid<c){ sh=d.step; if(j<to) to=j; }
+      else if(j>d.k&&mid>c){ sh=-d.step; if(j>to) to=j; }
+      if(r.sh!==sh){ r.sh=sh; r.el.style.transform=sh?`translateY(${sh}px)`:''; }
+    });
+    d.to=to;
+  }
+  function cleanup(d){
+    d.rows.forEach(r=>{ r.el.style.transition=''; r.el.style.transform=''; r.el.classList.remove('lifting','shifting'); });
+    list.classList.remove('sorting');
+  }
   list.addEventListener('pointerdown',e=>{
-    const g=e.target.closest('.grip'); if(!g) return;
+    const g=e.target.closest('.grip'); if(!g||drag) return;
     e.preventDefault(); e.stopPropagation();
-    const li=g.closest('li'), k=[...list.children].filter(x=>x.tagName==='LI').indexOf(li); if(k<0) return;
-    const line=document.createElement('div'); line.className='dropline'; list.appendChild(line);
-    drag={k,t:k,li,line,id:e.pointerId,sc:scroller(list),y:e.clientY};
-    li.classList.add('dragging'); g.setPointerCapture(e.pointerId); placeLine(k);
+    const lis=items(), li=g.closest('li'), k=lis.indexOf(li); if(k<0) return;
+    const lr=list.getBoundingClientRect(), sc=scroller(list);
+    const rows=lis.map(el=>{ const r=el.getBoundingClientRect(); return {el,top:r.top-lr.top,h:r.height,sh:0}; });
+    const gap=parseFloat(getComputedStyle(list).rowGap)||0;
+    drag={k,to:k,rows,id:e.pointerId,sc,sc0:sc?sc.scrollTop:0,listTop:lr.top,y:e.clientY,step:rows[k].h+gap,g};
+    drag.y0=yIn(drag,e.clientY);
+    list.classList.add('sorting');
+    rows.forEach((r,j)=>r.el.classList.add(j===k?'lifting':'shifting'));
+    g.setPointerCapture(e.pointerId);
+    if(sc){ drag.onScroll=()=>{ if(drag) update(drag); }; sc.addEventListener('scroll',drag.onScroll,{passive:true}); }
   });
   list.addEventListener('pointermove',e=>{
     if(!drag||e.pointerId!==drag.id) return;
-    drag.y=e.clientY; drag.t=targetAt(e.clientY); placeLine(drag.t);
+    e.preventDefault();
+    drag.y=e.clientY;
     /* 一覧の上下の端に近づいたら、一覧をスクロールする */
     if(drag.sc){ const r=drag.sc.getBoundingClientRect(); if(e.clientY<r.top+30) drag.sc.scrollTop-=12; else if(e.clientY>r.bottom-30) drag.sc.scrollTop+=12; }
+    update(drag);
   });
   const end=e=>{
     if(!drag||e.pointerId!==drag.id) return;
-    const d=drag; drag=null; d.li.classList.remove('dragging'); d.line.remove();
-    if(e.type==='pointerup') onMove(d.k,d.t);
+    const d=drag; drag=null;
+    if(d.sc&&d.onScroll) d.sc.removeEventListener('scroll',d.onScroll);
+    try{ d.g.releasePointerCapture(d.id); }catch(err){}
+    const to=d.to;
+    if(e.type!=='pointerup'||to===d.k){
+      /* すき間が元の位置のまま：何も変えず、ずらした行も元に戻す */
+      const me=d.rows[d.k].el; me.style.transition='transform .16s ease';
+      d.rows.forEach(r=>{ r.el.style.transform=''; });
+      setTimeout(()=>cleanup(d),180);
+      return;
+    }
+    cleanup(d);
+    onMove(d.k,to>d.k?to+1:to);   /* onMove の t は「t番目の行の手前に入れる」 */
   };
   list.addEventListener('pointerup',end); list.addEventListener('pointercancel',end);
   list.addEventListener('click',e=>{ if(e.target.closest('.grip')){ e.preventDefault(); e.stopPropagation(); } },true);
