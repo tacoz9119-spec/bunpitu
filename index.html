@@ -484,8 +484,8 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
   </div>
   <div id="topInfo"><span id="tiLeft"></span><span id="tiScene"></span><span id="tiRight"></span></div>
   <div class="stats" aria-live="polite">
-    <span>原稿用紙換算<b id="sMai">0</b>枚・<b id="sNet">0</b>文字（字下げ込み<b id="sAll">0</b>文字）</span>
-    <span id="sLine2"><span id="sSel" hidden>選択中 <b id="sSelNet">0</b>文字（字下げ込み<b id="sSelAll">0</b>文字）・</span><span id="sSave">接続中…</span></span>
+    <span>原稿用紙換算<b id="sMai">0</b>枚・<b id="sNet">0</b>文字</span>
+    <span id="sLine2"><span id="sSel" hidden>選択中 <b id="sSelNet">0</b>文字・</span><span id="sSave">接続中…</span></span>
   </div>
 </header>
 
@@ -598,7 +598,7 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
       </div>
     </div>
     <div class="small">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
-    <div class="small">Version 1.03</div>
+    <div class="small">Version 1.04</div>
   </div>
 </div>
 <div class="scrim" id="manPanel" hidden>
@@ -1507,13 +1507,13 @@ function drawSel(){
   const r=selRange();
   selLayer.innerHTML=(!r||!L||!G)?'':spanBoxes([r]);
 }
-/* 右上の表示：原稿用紙換算の枚数・文字数（字下げを除く／字下げ込み）。文字を選んでいるときは、選んだ範囲の文字数も出す */
+/* 右上の表示：原稿用紙換算の枚数・文字数（段落の頭の字下げを除く）。文字を選んでいるときは、選んだ範囲の文字数も出す */
 function updateStats(){
   const st=countIn(doc,0,doc.length,L.markup);
-  $('sNet').textContent=fmt(st.net); $('sAll').textContent=fmt(st.all);
+  $('sNet').textContent=fmt(st.net);
   $('sMai').textContent=K?fmt(K.mai):'…';
   const r=selRange(), sl=$('sSel');
-  if(r){ const s=countIn(doc,r[0],r[1],L.markup); $('sSelNet').textContent=fmt(s.net); $('sSelAll').textContent=fmt(s.all); sl.hidden=false; }
+  if(r){ const s=countIn(doc,r[0],r[1],L.markup); $('sSelNet').textContent=fmt(s.net); sl.hidden=false; }
   else sl.hidden=true;
 }
 
