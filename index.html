@@ -441,14 +441,15 @@ html.ipad.composing #ta{caret-color:var(--caret)}
 .cvtag{position:absolute;top:8px;left:12px;font-family:var(--f-ui);font-size:11px;color:var(--muted)}
 .ctitle{position:absolute;left:50%;top:var(--pad);transform:translateX(-50%);writing-mode:vertical-rl;text-orientation:mixed;font-family:var(--f-ms);font-weight:var(--f-w);font-size:calc(var(--cell)*.78*1.35*var(--fs,1));letter-spacing:.2em;line-height:1.7;max-height:calc(var(--cell)*var(--rows));color:var(--ink);pointer-events:auto;cursor:pointer}
 .ctitle:empty::before{content:"（題名未設定）";color:var(--muted)}
-/* PDFのパネル */
-.pdsub{padding-left:30px}
-.pdm{gap:14px}
-.pdm .num input{width:60px}
-.pdsub input:disabled{opacity:.5}
-.pdres{white-space:pre-line;border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.7;font-variant-numeric:tabular-nums;background:var(--desk);color:var(--ink)}
-.pdres.ng{background:color-mix(in srgb,var(--accent) 14%,var(--paper));color:var(--ink)}
-.pdres.warn{background:color-mix(in srgb,#C98A12 16%,var(--paper));color:var(--ink)}
+/* PDFのパネル：「その他」と同じ大きさの文字にそろえる（ボタン13px・説明12px・入力欄14px） */
+#pdfPanel .num{font-size:13px;gap:6px}
+#pdfPanel .num input{width:64px;font-size:14px;padding:6px 8px;-moz-appearance:textfield;appearance:textfield}
+#pdfPanel .num input::-webkit-inner-spin-button,#pdfPanel .num input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+#pdfPanel .num input:disabled{opacity:.45}
+#pdfPanel .nrow{gap:16px;align-items:center}
+.pdres{white-space:pre-line;border-radius:7px;padding:8px 12px;font-size:13px;line-height:1.7;font-variant-numeric:tabular-nums;background:var(--desk);color:var(--ink)}
+.pdres.ng{background:color-mix(in srgb,var(--accent) 14%,var(--paper))}
+.pdres.warn{background:color-mix(in srgb,#C98A12 16%,var(--paper))}
 .pdgo{justify-content:flex-end}
 #pdPre button[aria-pressed="true"],#pdSizes button[aria-pressed="true"],#pdFont button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 /* ---------- ウェブアプリ版：同期のログインと、同期の確認中の表示（Hongaki と同じ） ---------- */
@@ -582,6 +583,13 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
       <div class="small" id="exportNote">テキストでは、ルビを「親文字（よみ）」の形にし、傍点の記号は外します。iPadでは共有の画面が開くので、「“ファイル”に保存」などを選んでください。</div>
     </div>
     <div class="pgroup">
+      <h3>表紙・登場人物表・あらすじ（この原稿）</h3>
+      <label class="chk"><input type="checkbox" id="pCover"> 表紙を付ける（題名をページ中央に縦書き）</label>
+      <label class="chk"><input type="checkbox" id="pCast"> 登場人物表のページを付ける</label>
+      <label class="chk"><input type="checkbox" id="pSyn"> あらすじのページを付ける</label>
+      <div class="small">表紙・登場人物表・あらすじの順に本文の前に置き、それぞれ新しいページから始めます。エディターでは本文の前に表示され、そこで書き込めます。PDFではページ番号を付けず、文字数と原稿用紙換算の枚数にも数えません。登場人物表は、人物パネルの「人物一覧」と連動します。あらすじを外すと、その内容も消えます（「元に戻す」で戻せます）。</div>
+    </div>
+    <div class="pgroup">
       <h3>書き方</h3>
       <div class="small">ルビは「｜親文字《よみ》」、傍点は「《《傍点を付ける文字》》」の形で原稿に入ります。この形を直接入力しても、ルビや傍点になります。文字数と原稿用紙換算の枚数には、改行とこれらの記号・読み仮名は入りません。</div>
     </div>
@@ -607,7 +615,7 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
       </div>
     </div>
     <div class="small">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
-    <div class="small">Version 1.05</div>
+    <div class="small">Version 1.06</div>
   </div>
 </div>
 <div class="scrim" id="manPanel" hidden>
@@ -708,19 +716,18 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
       </div>
     </div>
     <div class="pgroup">
-      <h3>表紙・登場人物表・あらすじ（この原稿）</h3>
-      <label class="chk"><input type="checkbox" id="pdCover"> 表紙を付ける（題名をページ中央に縦書き）</label>
-      <label class="num pdsub">題名の大きさ<input id="pdTsize" type="number" min="6" max="48" step="0.5" inputmode="decimal" aria-label="表紙の題名の大きさ">pt</label>
-      <label class="chk"><input type="checkbox" id="pdCast"> 登場人物表のページを付ける</label>
-      <label class="chk"><input type="checkbox" id="pdSyn"> あらすじのページを付ける</label>
-      <div class="small">表紙・登場人物表・あらすじの順に本文の前に置き、それぞれ新しいページから始めます。エディターでも本文の前に表示され、そこで書き込めます。ページ番号は付けず、本文の枚数にも数えません。登場人物表は、人物パネルの「人物一覧」と連動します。あらすじを外すと、その内容も消えます（「元に戻す」で戻せます）。</div>
+      <h3>表紙の題名</h3>
+      <div class="nrow">
+        <label class="num">大きさ<input id="pdTsize" type="number" min="6" max="48" step="0.5" inputmode="decimal" aria-label="表紙の題名の大きさ">pt</label>
+      </div>
+      <div class="small" id="pdCvNote"></div>
     </div>
     <div class="pgroup">
       <h3>確認</h3>
       <div class="pdres" id="pdRes" role="status"></div>
       <div class="pbtns" id="pdFixBox" hidden><button id="pdFix" type="button"></button></div>
     </div>
-    <div class="small">用紙はA4横置きです。ページ番号は、本文の各ページの下の中央に入ります。改ページを入れたところからは、新しいページに続けます。字数・行数・書体・文字の大きさ・余白は、原稿ごとに覚えます。</div>
+    <div class="small">用紙はA4横置きです。ページ番号は、本文の各ページの下の中央に入ります。改ページを入れたところからは、新しいページに続けます。表紙・登場人物表・あらすじのページは「その他」で付けられます。この画面の設定は、原稿ごとに覚えます。</div>
     <div class="pbtns pdgo"><button id="pdCancel" type="button">やめる</button><button id="pdMake" type="button" class="solid">PDFを作る</button></div>
   </div>
 </div>
@@ -2634,8 +2641,8 @@ function fillPdf(){
   document.querySelectorAll('#pdPre button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.c===o.c&&+b.dataset.l===o.l)));
   document.querySelectorAll('#pdSizes button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.s===o.s)));
   document.querySelectorAll('#pdFont button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===o.f)));
-  $('pdCover').checked=!!F.cv; $('pdCast').checked=!!F.cast; $('pdSyn').checked=!!F.syn;
   $('pdTsize').disabled=!F.cv;
+  $('pdCvNote').textContent=F.cv?'題名は、上の「題名」欄の文字を使います。':'表紙を付けると指定できます（表紙は「その他」で付けられます）。';
   clearTimeout(pdT); pdT=setTimeout(checkPdf,doc.length>50000?300:0);
 }
 /* 確認：入らないときは、余白をどれだけにすれば入るかを示す */
@@ -2678,17 +2685,20 @@ pdfNum('pdMt','m',5,80,0); pdfNum('pdMb','m',5,80,1); pdfNum('pdMr','m',5,80,2);
 $('pdPre').addEventListener('click',e=>{ const b=e.target.closest('button[data-c]'); if(!b) return; const o=pdfOpt(); o.c=+b.dataset.c; o.l=+b.dataset.l; pdfSave(o); fillPdf(); });
 $('pdSizes').addEventListener('click',e=>{ const b=e.target.closest('button[data-s]'); if(!b) return; const o=pdfOpt(); o.s=+b.dataset.s; pdfSave(o); fillPdf(); });
 $('pdFont').addEventListener('click',e=>{ const b=e.target.closest('button[data-f]'); if(!b) return; const o=pdfOpt(); o.f=b.dataset.f; pdfSave(o); fillPdf(); });
-$('pdCover').addEventListener('change',()=>{
-  toggleCover($('pdCover').checked); render(); fillPdf();
-  toast($('pdCover').checked?'表紙を付けました。エディターの最初のページで、題名の右と左の行に書き込めます':'表紙を外しました（「元に戻す」で戻せます）',3500);
+/* 「その他」：表紙・登場人物表・あらすじのページの付け外し */
+function syncFrontChecks(){ const F=frontInfo(); $('pCover').checked=!!F.cv; $('pCast').checked=!!F.cast; $('pSyn').checked=!!F.syn; }
+$('bDocs').addEventListener('click',syncFrontChecks);
+$('pCover').addEventListener('change',()=>{
+  toggleCover($('pCover').checked); render(); syncFrontChecks();
+  toast($('pCover').checked?'表紙を付けました。エディターの最初のページで、題名の右と左の行に書き込めます':'表紙を外しました（「元に戻す」で戻せます）',3500);
 });
-$('pdCast').addEventListener('change',()=>{
-  setFrontOn('cast',$('pdCast').checked); render(); fillPdf();
-  toast($('pdCast').checked?'登場人物表のページを付けました。人物パネルの「人物一覧」と連動します':'登場人物表のページを外しました。人物一覧の内容は残ります',3500);
+$('pCast').addEventListener('change',()=>{
+  setFrontOn('cast',$('pCast').checked); render(); syncFrontChecks();
+  toast($('pCast').checked?'登場人物表のページを付けました。人物パネルの「人物一覧」と連動します':'登場人物表のページを外しました。人物一覧の内容は残ります',3500);
 });
-$('pdSyn').addEventListener('change',()=>{
-  setFrontOn('syn',$('pdSyn').checked); render(); fillPdf();
-  toast($('pdSyn').checked?'あらすじのページを付けました。エディターで、見出しのあとに書き込めます':'あらすじのページを外しました（「元に戻す」で戻せます）',3500);
+$('pSyn').addEventListener('change',()=>{
+  setFrontOn('syn',$('pSyn').checked); render(); syncFrontChecks();
+  toast($('pSyn').checked?'あらすじのページを付けました。エディターで、見出しのあとに書き込めます':'あらすじのページを外しました（「元に戻す」で戻せます）',3500);
 });
 $('pdClose').addEventListener('click',()=>$('pdfPanel').hidden=true);
 $('pdCancel').addEventListener('click',()=>$('pdfPanel').hidden=true);
