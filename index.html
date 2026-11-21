@@ -393,24 +393,6 @@ html.wmedium .ch.hd{font-weight:500;-webkit-text-stroke:.03em currentColor}
   top:calc(var(--pad) + var(--r)*var(--cell));width:calc(var(--cell)*.3);height:var(--cell);display:flex;align-items:center;justify-content:center;
   writing-mode:vertical-rl;font-family:var(--f-ms);font-size:calc(var(--cell)*.32);line-height:1;color:var(--ink)}
 /* 人物 */
-#pplList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0;position:relative}
-#pplList li{display:flex;align-items:flex-start;gap:4px;padding:8px 0;border-bottom:1px solid var(--edge)}
-#pplList li.dragging{opacity:.45}
-#pplList .dropline{position:absolute;left:0;right:0;height:2px;background:var(--accent);border-radius:1px;pointer-events:none}
-#pplList .pf{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px}
-#pplList .pnm{font-family:var(--f-ui);font-size:15px;font-weight:600;color:var(--ink);background:transparent;border:0;border-bottom:1px solid transparent;border-radius:0;padding:4px 2px}
-#pplList .pnm:focus{outline:none;border-bottom-color:var(--rule)}
-#pplList .pnm::placeholder,#pplList .ppr::placeholder{color:var(--muted);font-weight:400}
-#pplList .ppr{width:100%;box-sizing:border-box;resize:none;overflow:hidden;font-family:var(--f-ui);font-size:13px;line-height:1.6;color:var(--ink);
-  background:var(--paper);border:1px solid var(--edge);border-radius:6px;padding:6px 8px;min-height:44px}
-#pplList .ppr:focus{outline:2px solid var(--accent);outline-offset:0}
-#pplList .pside{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:4px}
-#pplList .grip{width:26px;height:26px;display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:grab;touch-action:none;border-radius:6px;opacity:.7}
-#pplList .grip:active{cursor:grabbing}
-#pplList .pdel{min-width:26px;height:26px;padding:0 4px;display:flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:transparent;color:var(--muted);font-family:var(--f-ui);font-size:11px;cursor:pointer}
-#pplList .pdel:hover{background:var(--desk);color:var(--accent)}
-#pplList .pdel.arm{background:var(--accent);color:var(--paper);font-weight:700}
-#tabPeople .pbtns{margin-top:10px}
 .addp{font:inherit;font-size:13px;min-height:34px;padding:0 12px;border-radius:7px;border:1px solid var(--edge);background:var(--paper);color:var(--ink);cursor:pointer}
 /* 外見：字詰め */
 .nrow{display:flex;flex-wrap:wrap;gap:20px}
@@ -420,6 +402,11 @@ html.wmedium .ch.hd{font-weight:500;-webkit-text-stroke:.03em currentColor}
 #lhSel button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 #lhSel button{min-width:64px}
 #tabNotes{gap:10px;padding-bottom:8px}
+#tabPeople{gap:10px;padding-bottom:8px}
+.clink{margin-left:8px;font-weight:400;letter-spacing:0;color:var(--muted)}
+#nt-cast{min-height:10.3em}
+#pmemoBox{flex:1 1 auto;min-height:0}
+#nt-pmemo{flex:1 1 auto;min-height:12em;resize:none}
 #plotBox{flex:1 1 auto;min-height:0}
 #nt-memo{flex:1 1 auto;min-height:12em;resize:none}
 /* ページのまわりの灰色の幅を、上下左右とページのあいだでそろえる */
@@ -443,6 +430,27 @@ html.ipad.composing #caret{display:none}
 html.ipad.composing #ta{caret-color:var(--caret)}
 /* カーソルの点滅：端末が「視差効果を減らす」設定でも点滅させる（点滅しないと位置を見失いやすいため） */
 @media (prefers-reduced-motion: reduce){ #caret.on{animation:blink 1.05s steps(1) infinite} }
+
+/* 改ページの印（エディターだけに表示。PDFには出ない） */
+.brkm{position:absolute;right:calc(var(--padx,var(--pad)) + var(--c)*var(--step));top:var(--pad);width:var(--cell);height:calc(var(--cell)*var(--rows));display:flex;align-items:center;justify-content:center;pointer-events:none}
+.brkm::before{content:"";position:absolute;top:0;bottom:0;left:50%;border-left:1px dashed var(--muted)}
+.brkm span{position:relative;writing-mode:vertical-rl;font-family:var(--f-ui);font-size:max(11px,calc(var(--cell)*.45));letter-spacing:.3em;color:var(--muted);background:var(--paper);padding:8px 0}
+/* 表紙：空いている行は点線で示し、題名はページの中央に縦書きで置く */
+.cvslot{position:absolute;right:calc(var(--padx,var(--pad)) + var(--c)*var(--step) + var(--cell)/2);top:var(--pad);height:calc(var(--cell)*var(--rows));border-right:1px dashed var(--rule);pointer-events:none}
+.cvtitle{position:absolute;inset:0;pointer-events:none;z-index:3}
+.cvtag{position:absolute;top:8px;left:12px;font-family:var(--f-ui);font-size:11px;color:var(--muted)}
+.ctitle{position:absolute;left:50%;top:var(--pad);transform:translateX(-50%);writing-mode:vertical-rl;text-orientation:mixed;font-family:var(--f-ms);font-weight:var(--f-w);font-size:calc(var(--cell)*.78*1.35*var(--fs,1));letter-spacing:.2em;line-height:1.7;max-height:calc(var(--cell)*var(--rows));color:var(--ink);pointer-events:auto;cursor:pointer}
+.ctitle:empty::before{content:"（題名未設定）";color:var(--muted)}
+/* PDFのパネル */
+.pdsub{padding-left:30px}
+.pdm{gap:14px}
+.pdm .num input{width:60px}
+.pdsub input:disabled{opacity:.5}
+.pdres{white-space:pre-line;border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.7;font-variant-numeric:tabular-nums;background:var(--desk);color:var(--ink)}
+.pdres.ng{background:color-mix(in srgb,var(--accent) 14%,var(--paper));color:var(--ink)}
+.pdres.warn{background:color-mix(in srgb,#C98A12 16%,var(--paper));color:var(--ink)}
+.pdgo{justify-content:flex-end}
+#pdPre button[aria-pressed="true"],#pdSizes button[aria-pressed="true"],#pdFont button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 /* ---------- ウェブアプリ版：同期のログインと、同期の確認中の表示（Hongaki と同じ） ---------- */
 .sybox{display:flex;flex-direction:column;gap:8px}
 .sybox input{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--edge);border-radius:7px;background:var(--paper);color:var(--ink)}
@@ -467,6 +475,7 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
     </div>
     <button id="bRuby" type="button" disabled title="選んだ文字にルビを付ける">ルビ</button>
     <button id="bEmph" type="button" disabled title="選んだ文字に傍点を付ける">傍点</button>
+    <button id="bBrk" type="button" title="カーソルの位置で改ページする">改ページ</button>
     <span class="sep"></span>
     <button id="bUndo" class="ico" type="button" disabled aria-label="元に戻す" title="元に戻す"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
     <button id="bRedo" class="ico" type="button" disabled aria-label="やり直す" title="やり直す"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
@@ -506,9 +515,8 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
   </section>
 
   <section class="tab" id="tabPeople" hidden>
-    <div class="tabhead"><span id="pplCount"></span><span>ドラッグで並べ替え</span></div>
-    <ul id="pplList"></ul>
-    <div class="pbtns"><button id="pplAdd" type="button" class="addp">人物を追加</button></div>
+    <div class="nbox" id="castBox"><label for="nt-cast">人物一覧<span id="castLink" class="clink" hidden>登場人物表と連動</span></label><textarea id="nt-cast" data-key="cast" rows="8"></textarea></div>
+    <div class="nbox" id="pmemoBox"><label for="nt-pmemo">人物メモ</label><textarea id="nt-pmemo" data-key="pmemo"></textarea></div>
   </section>
 
   <section class="tab" id="tabNotes" hidden>
@@ -567,6 +575,7 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
     <div class="pgroup">
       <h3>書き出し</h3>
       <div class="pbtns">
+        <button id="pPdf" type="button">PDFで書き出す</button>
         <button id="pTxt" type="button">テキストで書き出す</button>
         <button id="pCopy" type="button">本文をコピー</button>
       </div>
@@ -598,7 +607,7 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
       </div>
     </div>
     <div class="small">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
-    <div class="small">Version 1.04</div>
+    <div class="small">Version 1.05</div>
   </div>
 </div>
 <div class="scrim" id="manPanel" hidden>
@@ -655,6 +664,64 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
       <div class="small"><ins>緑の下線</ins>は今の原稿で増えた部分、<del>赤の取り消し線</del>は今の原稿で消えた部分です。「この場所へ」を押すと、今の原稿のその箇所に移ります。</div>
     </div>
     <div id="cmpBody"></div>
+  </div>
+</div>
+<div class="scrim" id="pdfPanel" hidden>
+  <div class="panel" role="dialog" aria-labelledby="pdfTitle">
+    <div class="phead"><h2 id="pdfTitle">PDFで書き出す</h2><button id="pdClose" type="button">閉じる</button></div>
+    <div class="pgroup">
+      <h3>字数と行数</h3>
+      <div class="pbtns" id="pdPre" role="group" aria-label="よく使う字数と行数">
+        <button type="button" data-c="40" data-l="30" aria-pressed="false">40字×30行</button>
+        <button type="button" data-c="40" data-l="40" aria-pressed="false">40字×40行</button>
+        <button type="button" data-c="20" data-l="20" aria-pressed="false">20字×20行</button>
+        <button type="button" data-c="20" data-l="30" aria-pressed="false">20字×30行</button>
+      </div>
+      <div class="nrow">
+        <label class="num">1行<input id="pdChars" type="number" min="10" max="60" step="1" inputmode="numeric" aria-label="1行の字数">字</label>
+        <label class="num">1ページ<input id="pdLines" type="number" min="5" max="60" step="1" inputmode="numeric" aria-label="1ページの行数">行</label>
+      </div>
+    </div>
+    <div class="pgroup">
+      <h3>書体と文字の大きさ</h3>
+      <div class="pbtns" id="pdFont" role="group" aria-label="書体">
+        <button type="button" data-f="mincho" aria-pressed="false">明朝体</button>
+        <button type="button" data-f="gothic" aria-pressed="false">ゴシック体</button>
+      </div>
+      <div class="nrow">
+        <label class="num">本文<input id="pdSize" type="number" min="6" max="30" step="0.5" inputmode="decimal" aria-label="本文の文字の大きさ">pt</label>
+        <div class="pbtns" id="pdSizes" role="group" aria-label="よく使う文字の大きさ">
+          <button type="button" data-s="10.5" aria-pressed="false">10.5</button>
+          <button type="button" data-s="11" aria-pressed="false">11</button>
+          <button type="button" data-s="12" aria-pressed="false">12</button>
+          <button type="button" data-s="16" aria-pressed="false">16</button>
+        </div>
+      </div>
+    </div>
+    <div class="pgroup">
+      <h3>余白</h3>
+      <div class="nrow pdm">
+        <label class="num">上<input id="pdMt" type="number" min="5" max="80" step="1" inputmode="decimal" aria-label="上の余白">mm</label>
+        <label class="num">下<input id="pdMb" type="number" min="5" max="80" step="1" inputmode="decimal" aria-label="下の余白">mm</label>
+        <label class="num">右<input id="pdMr" type="number" min="5" max="80" step="1" inputmode="decimal" aria-label="右の余白">mm</label>
+        <label class="num">左<input id="pdMl" type="number" min="5" max="80" step="1" inputmode="decimal" aria-label="左の余白">mm</label>
+      </div>
+    </div>
+    <div class="pgroup">
+      <h3>表紙・登場人物表・あらすじ（この原稿）</h3>
+      <label class="chk"><input type="checkbox" id="pdCover"> 表紙を付ける（題名をページ中央に縦書き）</label>
+      <label class="num pdsub">題名の大きさ<input id="pdTsize" type="number" min="6" max="48" step="0.5" inputmode="decimal" aria-label="表紙の題名の大きさ">pt</label>
+      <label class="chk"><input type="checkbox" id="pdCast"> 登場人物表のページを付ける</label>
+      <label class="chk"><input type="checkbox" id="pdSyn"> あらすじのページを付ける</label>
+      <div class="small">表紙・登場人物表・あらすじの順に本文の前に置き、それぞれ新しいページから始めます。エディターでも本文の前に表示され、そこで書き込めます。ページ番号は付けず、本文の枚数にも数えません。登場人物表は、人物パネルの「人物一覧」と連動します。あらすじを外すと、その内容も消えます（「元に戻す」で戻せます）。</div>
+    </div>
+    <div class="pgroup">
+      <h3>確認</h3>
+      <div class="pdres" id="pdRes" role="status"></div>
+      <div class="pbtns" id="pdFixBox" hidden><button id="pdFix" type="button"></button></div>
+    </div>
+    <div class="small">用紙はA4横置きです。ページ番号は、本文の各ページの下の中央に入ります。改ページを入れたところからは、新しいページに続けます。字数・行数・書体・文字の大きさ・余白は、原稿ごとに覚えます。</div>
+    <div class="pbtns pdgo"><button id="pdCancel" type="button">やめる</button><button id="pdMake" type="button" class="solid">PDFを作る</button></div>
   </div>
 </div>
 <div class="scrim" id="lookPanel" hidden>
@@ -751,8 +818,26 @@ const S='​', PART=30000;
 const KROWS=20, KPER=20;   /* 原稿用紙換算：20字×20行 */
 const HANG=new Set([...'、。，．,.」』）〕】〉》］｝”’)]']);
 const ASC=/^[\x21-\x7E]$/;
-const NAMES={body:'本文',head:'見出し'};
-const CODE={body:'b',head:'h'}, DECODE={b:'body',h:'head'};
+/* 段落の種類。brk＝改ページ（中身のない段落）。
+   cvr＝表紙の行、casthead／cast＝登場人物表、synhead／syn＝あらすじ（この3つは本文の前に置く） */
+const NAMES={body:'本文',head:'見出し',brk:'改ページ',cvr:'表紙',casthead:'登場人物表の見出し',cast:'登場人物表',synhead:'あらすじの見出し',syn:'あらすじ'};
+const CODE={body:'b',head:'h',brk:'p',cvr:'v',casthead:'c',cast:'k',synhead:'a',syn:'y'}, DECODE={b:'body',h:'head',p:'brk',v:'cvr',c:'casthead',k:'cast',a:'synhead',y:'syn'};
+const CAST_HEAD='【登場人物表】', SYN_HEAD='【あらすじ】', COVER_N=8, COVER_MAX=40;
+/* 段落のまとまり：つなげたり、またいで消したりできるのは同じまとまりの中だけ */
+const ZONE={body:'body',head:'body',brk:'body',cvr:'cvr',cast:'cast',syn:'syn',casthead:'fix',synhead:'fix'};
+const isFixed=t=>t==='casthead'||t==='synhead';
+/* 本文の前のページ：表紙（先頭の表紙の行）・登場人物表・あらすじの範囲（段落の番号）。end＝本文の最初の段落 */
+function frontInfo(){
+  let k=0, cv=null, cast=null, syn=null;
+  if(types[0]==='cvr'){ while(k<types.length&&types[k]==='cvr') k++; cv=[0,k]; }
+  if(types[k]==='casthead'){ const s0=k++; while(k<types.length&&types[k]==='cast') k++; cast=[s0,k]; }
+  if(types[k]==='synhead'){ const s0=k++; while(k<types.length&&types[k]==='syn') k++; syn=[s0,k]; }
+  return {cv,cast,syn,end:k};
+}
+/* 本文の書き出し用：表紙の行を除いた最初の位置 */
+const afterCover=()=>{ const F=frontInfo(); return F.cv?paraStart(F.cv[1]):0; };
+/* 表紙の行を置く列：前半の4行は右から、後半の4行はページの左端に寄せる */
+const coverCol=(k,per)=>per<COVER_N+2?k:(k<COVER_N/2?k:per-COVER_N+k);
 /* テキストを読み込むとき・貼り付けるとき、この形で始まる行は見出しにする */
 const HEADRE=/^[　 ]*(第[一二三四五六七八九十百千〇零0-9０-９]+[章話部節幕]|プロローグ|エピローグ|序章|終章)/;
 const SAMPLE_TITLE='春の切符（仮）';
@@ -807,6 +892,14 @@ function fixTypes(){
   types=types.slice(0,n).map(t=>NAMES[t]?t:'body');
   while(types.length<n) types.push('body');
   pids=pids.slice(0,n); while(pids.length<n) pids.push(newPid());
+  fixFronts();
+}
+/* 本文の前のページの段落は先頭にまとめて置く。途中に紛れ込んだもの（古い版で読み込んだ原稿など）は本文にする。
+   本文の前のページだけで終わっているときは、本文の段落を1つ足す */
+function fixFronts(){
+  const F=frontInfo();
+  for(let p=F.end;p<types.length;p++) if(ZONE[types[p]]!=='body') types[p]='body';
+  if(F.end>0&&F.end>=types.length){ doc.push('\n'); types.push('body'); pids.push(newPid()); }
 }
 function setDoc(o){
   curId=o.id; title=o.t||''; doc=[...(o.d||'')]; types=(o.y||[]).slice();
@@ -1167,10 +1260,14 @@ function layout(d,rows,opt){
   const lite=!!opt.lite, n=d.length;
   const cols=[], endMap=lite?null:{}, rot=rotRuns(d);
   let SC=null, SR=null, SA=null;
+  const adv=opt.adv||advOf;   /* 半角の文字の長さ（PDFでは、PDFのフォントで測った値） */
   if(!lite){
     refreshAdvFont();
-    if(!slotBuf||slotBuf.SC.length<n+1){ const cap=Math.max(1024,Math.ceil((n+1)*1.25)); slotBuf={SC:new Int32Array(cap),SR:new Float32Array(cap),SA:new Float32Array(cap)}; }
-    SC=slotBuf.SC; SR=slotBuf.SR; SA=slotBuf.SA; SC.fill(-1,0,n+1);
+    if(opt.own){ SC=new Int32Array(n+1).fill(-1); SR=new Float32Array(n+1); SA=new Float32Array(n+1); }   /* PDF用：画面の配置とは別に持つ */
+    else {
+      if(!slotBuf||slotBuf.SC.length<n+1){ const cap=Math.max(1024,Math.ceil((n+1)*1.25)); slotBuf={SC:new Int32Array(cap),SR:new Float32Array(cap),SA:new Float32Array(cap)}; }
+      SC=slotBuf.SC; SR=slotBuf.SR; SA=slotBuf.SA; SC.fill(-1,0,n+1);
+    }
   }
   const rubies=rubyRuns(d), emphs=emphRuns(d), hidden=new Uint8Array(n), markup=new Uint8Array(n), shownR=[], shownE=[];
   for(const g of rubies){
@@ -1187,19 +1284,38 @@ function layout(d,rows,opt){
   }
   const pcol=[];
   let i=0, p=0, col, ci=0;
+  /* ページの区切り：opt.per＝1ページの行数（画面は PER、原稿用紙換算は20、PDFは指定の行数）。
+     改ページのあと、本文の前の各ページ（表紙・登場人物表・あらすじ）と本文の始まりは、新しいページから始める。
+     画面では改ページの印に1行を使い、PDFと原稿用紙換算では行を使わない */
+  const per=opt.per||PER, print=!!opt.print, F=frontInfo();
+  const pad=m=>{ while(cols.length<m) cols.push({start:i,end:i,p,t:'fill',cells:[],hang:[],row:0,hangEnd:0,filler:true}); };
+  const toPage=()=>{ const m=cols.length%per; if(m) pad(cols.length+per-m); };
   const open=first=>{
+    if(first&&p>0){
+      const t=types[p], pt=types[p-1];
+      if(print&&pt==='brk'&&cols.length&&cols[cols.length-1].t==='brk') cols.pop();
+      if(t==='cvr'&&F.cv) pad(coverCol(p-F.cv[0],per));
+      else if(pt==='brk'||t==='casthead'||t==='synhead'||(p===F.end&&F.end>0)) toPage();
+      else if(pt==='casthead'||pt==='synhead') pad(cols.length+1);   /* 見出しのあとを1行空ける */
+    }
     col={start:i,p,t:types[p]||'body',cells:null,hang:[],row:0,hangEnd:0};
     if(first) pcol[p]=cols.length;
     ci=cols.length; cols.push(col);
+  };
+  /* 表紙の行は折り返さず、長いときは1行に収まるように詰める */
+  const fitCover=()=>{
+    if(col.t!=='cvr'||col.row<=rows||lite) return;
+    const f=rows/col.row; for(let k=col.start;k<col.end;k++){ SR[k]*=f; SA[k]*=f; } col.row=rows; col.squeeze=f;
   };
   open(true);
   if(lite){
     /* 原稿用紙換算：マス目に並べる */
     while(true){
-      if(i===n){ col.end=i; break; }
+      if(i===n){ col.end=i; if(col.t==='brk'&&cols.length>1) cols.pop(); break; }
       const ch=d[i];
       if(ch==='\n'){ col.end=i; i++; p++; open(true); continue; }
       if(hidden[i]){ i++; continue; }
+      if(col.t==='cvr'){ col.row++; i++; continue; }
       if(col.row<rows && !col.hang.length){
         const re=rot[i];
         if(re){
@@ -1213,22 +1329,23 @@ function layout(d,rows,opt){
       if(col.row===rows && HANG.has(ch) && col.hang.length<2){ col.hang.push({i,ch}); i++; continue; }
       col.end=i; open(false);
     }
-    return {cols,pcol,markup};
+    return {cols,pcol,markup,F,mainCol:F.end>0?(pcol[F.end]!=null?pcol[F.end]:cols.length):0};
   }
   /* 画面：字ごとの幅を足していく */
   let prevWord=false;   /* 直前の（隠していない）字が英単語の字か */
   while(true){
-    if(i===n){ col.end=i; endMap[i]=ci; break; }
+    if(i===n){ col.end=i; endMap[i]=ci; fitCover(); break; }
     const ch=d[i];
-    if(ch==='\n'){ col.end=i; endMap[i]=ci; i++; p++; prevWord=false; open(true); continue; }
-    if(hidden[i]){ SC[i]=ci; SR[i]=Math.min(col.hang.length?col.hangEnd:col.row,rows); SA[i]=0; i++; continue; }
+    if(ch==='\n'){ col.end=i; endMap[i]=ci; fitCover(); i++; p++; prevWord=false; open(true); continue; }
+    if(hidden[i]){ SC[i]=ci; SR[i]=col.t==='cvr'?col.row:Math.min(col.hang.length?col.hangEnd:col.row,rows); SA[i]=0; i++; continue; }
     const lat=isLat(ch), word=lat&&ch!==' ';
+    if(col.t==='cvr'){ const a=lat?adv(ch):1; SC[i]=ci; SR[i]=col.row; SA[i]=a; col.row+=a; i++; prevWord=word; continue; }
     if(word&&!prevWord&&col.row>0&&!col.hang.length){
       /* 英単語の頭：単語ごと行に入らなければ、次の行に送る */
-      let w=0; for(let k=i;k<n&&(hidden[k]||isWord(d[k]));k++) if(!hidden[k]) w+=advOf(d[k]);
+      let w=0; for(let k=i;k<n&&(hidden[k]||isWord(d[k]));k++) if(!hidden[k]) w+=adv(d[k]);
       if(col.row+w>rows+EPS&&w<=rows+EPS){ col.end=i; open(false); continue; }
     }
-    const a=lat?advOf(ch):1;
+    const a=lat?adv(ch):1;
     if(!col.hang.length&&col.row+a<=rows+EPS){
       SC[i]=ci; SR[i]=col.row; SA[i]=a; col.row+=a; i++; prevWord=word; continue;
     }
@@ -1242,6 +1359,7 @@ function layout(d,rows,opt){
     }
     col.end=i; open(false);
   }
+  if(print&&col.t==='brk'&&cols.length>1&&cols[cols.length-1]===col) cols.pop();
   const slotAtL=k=>SC[k]>=0?{c:SC[k],r:SR[k],a:SA[k]}:null;
   /* ルビの位置：親文字を行ごとに分け、読みを親文字の数に応じて振り分ける */
   const rubyAt=new Map(), dotAt=new Map();
@@ -1257,7 +1375,8 @@ function layout(d,rows,opt){
   for(const g of shownE){
     for(let k=g.s+2;k<g.e-2;k++){ const sl=slotAtL(k); if(!sl||sl.r>=rows||NODOT.has(d[k])) continue; put(dotAt,sl.c,{r:sl.r+(sl.a-1)/2}); }
   }
-  return {cols,SC,SR,SA,n,endMap,rot,hidden,rows,rubyAt,dotAt,markup,pcol,emph:emphs,rubies};
+  const mainCol=F.end>0?(pcol[F.end]!=null?pcol[F.end]:cols.length):0;
+  return {cols,SC,SR,SA,n,endMap,rot,hidden,rows,rubyAt,dotAt,markup,pcol,emph:emphs,rubies,F,mainCol,per};
 }
 const NODOT=new Set([...'　 、。，．,.・…‥「」『』（）()'] );
 /* 字の位置：k文字目が何行目（c）の、行の頭からどれだけの位置（r。全角の字の幅が1）にあるか。aは字の長さ */
@@ -1358,13 +1477,16 @@ function paintPage(p){
   for(let lc=0;lc<PER;lc++){
     const c=p*PER+lc, col=L.cols[c];
     let html='', sig='';
-    if(col){
-      const hd=col.t==='head'?' hd':'';
+    if(col&&col.t==='brk'){ html=`<span class="brkm" style="--c:${lc}"><span>改ページ</span></span>`; sig='brk'; }
+    else if(col&&col.t==='cvr'&&col.start===col.end){ html=`<span class="cvslot" style="--c:${lc}"></span>`; sig='slot'; }   /* 表紙の空いている行：点線で示す */
+    else if(col){
+      const hd=col.t==='head'||col.t==='casthead'||col.t==='synhead'?' hd':'';
+      const sq=col.squeeze?`;--fs:${(1.18*col.squeeze).toFixed(3)}`:'';   /* 詰めた表紙の行は、字も小さくする */
       for(const x of cellsOf(col)){
         if(x.ch===' '){ sig+='_'+x.r; continue; }   /* 半角の空白：何も描かない（幅だけ空ける） */
-        if(x.lat) html+=`<span class="ch lat${hd}" style="--c:${lc};--r:${x.r};--a:${x.a}">${esc(x.ch)}</span>`;   /* 半角の文字：横倒しにして、幅どおりに置く */
-        else html+=`<span class="ch${hd}" style="--c:${lc};--r:${x.r}">${esc(x.ch)}</span>`;
-        sig+=x.r+x.ch+hd;
+        if(x.lat) html+=`<span class="ch lat${hd}" style="--c:${lc};--r:${x.r};--a:${x.a}${sq}">${esc(x.ch)}</span>`;   /* 半角の文字：横倒しにして、幅どおりに置く */
+        else html+=`<span class="ch${hd}" style="--c:${lc};--r:${x.r}${sq}">${esc(x.ch)}</span>`;
+        sig+=x.r+x.ch+hd+sq;
       }
       const rbs=L.rubyAt.get(c);
       if(rbs) for(const rb of rbs){
@@ -1396,13 +1518,29 @@ function visRange(){
 }
 function paintPages(){
   if(!L||!G||!pages.length) return;
-  const [a,b]=visRange(), cp=Math.floor(caretCR().c/PER);
+  const [a,b]=visRange(), cp=Math.floor(caretCR().c/PER), mp=Math.floor(L.mainCol/PER);
   for(let p=0;p<pages.length;p++){
     if((p>=a&&p<=b)||p===cp) paintPage(p);
     else clearPage(pages[p]);
-    const pn=String(p+1);
+    /* 本文の前のページ（表紙・登場人物表・あらすじ）には番号を付けず、本文は1から数える */
+    const pn=p>=mp?String(p-mp+1):'';
     if(pages[p].pnoText!==pn){ pages[p].pno.textContent=pn; pages[p].pnoText=pn; }
   }
+  paintCover();
+}
+/* 表紙のページ：題名（上の「題名」欄の文字）をページの中央に縦書きで置く */
+function paintCover(){
+  const pg=pages[0]; if(!pg) return;
+  const on=!!(L&&L.F.cv);
+  let ov=pg.el.querySelector('.cvtitle');
+  if(on&&!ov){
+    ov=document.createElement('div'); ov.className='cvtitle'; ov.title='題名は上の入力欄で変えられます';
+    ov.innerHTML='<span class="cvtag">表紙</span><div class="ctitle"></div>';
+    ov.querySelector('.ctitle').addEventListener('pointerdown',e=>{ e.stopPropagation(); e.preventDefault(); });
+    ov.querySelector('.ctitle').addEventListener('click',e=>{ e.stopPropagation(); titleIn.focus(); });
+    pg.el.appendChild(ov);
+  } else if(!on&&ov){ ov.remove(); }
+  if(on){ const t=ov.querySelector('.ctitle'); if(t.textContent!==title) t.textContent=title; }
 }
 { let raf=0; window.addEventListener('scroll',()=>{ if(!raf) raf=requestAnimationFrame(()=>{ raf=0; paintPages(); }); },{passive:true}); }
 function render(){
@@ -1419,13 +1557,16 @@ function render(){
   $('bRuby').disabled=!rubyTarget(); $('bEmph').disabled=!emphTarget();
   const r=selRange();
   const cur=types[paraOf(r?r[0]:caret)];
-  document.querySelectorAll('.seg button[data-type]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.type===cur)));
+  const ed=cur==='body'||cur==='head';   /* 改ページ・表紙・登場人物表・あらすじの段落では、本文／見出しを切り替えない */
+  document.querySelectorAll('.seg button[data-type]').forEach(b=>{ b.setAttribute('aria-pressed',String(b.dataset.type===cur)); b.disabled=!ed; });
 }
 /* 原稿用紙換算：本文を20字×20行に並べ直して数える（段落ごとに新しい行から始め、行頭の句読点は前の行の下にぶら下げる） */
 let kT=0;
 function computeK(){
-  const LL=layout(doc,KROWS,{print:true,lite:true});
-  const mai=doc.length?Math.ceil(LL.cols.length/KPER):0;
+  /* 改ページは原稿用紙でも新しい1枚から始める。本文の前のページ（表紙・登場人物表・あらすじ）は数えない */
+  const LL=layout(doc,KROWS,{print:true,lite:true,per:KPER});
+  const bs=paraStart(LL.F.end), body=LL.cols.length-LL.mainCol;
+  const mai=doc.length>bs&&body>0?Math.ceil(body/KPER):0;
   const mk=LL.markup, heads={}, hs=P.filter(x=>x.t==='head');
   hs.forEach((x,k)=>{
     const nx=hs[k+1], endI=nx?nx.start:doc.length, endC=nx?LL.pcol[nx.p]:LL.cols.length;
@@ -1509,7 +1650,7 @@ function drawSel(){
 }
 /* 右上の表示：原稿用紙換算の枚数・文字数（段落の頭の字下げを除く）。文字を選んでいるときは、選んだ範囲の文字数も出す */
 function updateStats(){
-  const st=countIn(doc,0,doc.length,L.markup);
+  const st=countIn(doc,paraStart(L.F.end),doc.length,L.markup);   /* 本文の前のページは数えない */
   $('sNet').textContent=fmt(st.net);
   $('sMai').textContent=K?fmt(K.mai):'…';
   const r=selRange(), sl=$('sSel');
@@ -1526,7 +1667,6 @@ function setTab(t){
   $('tabToc').hidden=t!=='toc'; $('tabPeople').hidden=t!=='people'; $('tabNotes').hidden=t!=='notes'; $('tabFind').hidden=t!=='find'; $('tabLint').hidden=t!=='lint';
   if(t!=='find'){ try{ localStorage.setItem('bunpitu-tab',t); }catch(e){} }
   if(L) render();
-  if(t==='people') $('pplList').querySelectorAll('textarea').forEach(autoGrow);
 }
 document.querySelector('.tabs').addEventListener('click',e=>{
   const b=e.target.closest('button[data-tab]'); if(!b) return;
@@ -1557,8 +1697,9 @@ function updatePanels(){
   { const ts=$('tiScene'); if(ts){ const t=cur>=0?(olItems[cur].text||'（見出しの文言なし）'):''; if(ts.textContent!==t) ts.textContent=t; } }
   [...$('olList').children].forEach((li,k)=>li.classList.toggle('cur',k===cur));
   /* 人物・メモ：原稿を切り替えたときだけ書き直す */
-  if(pplFor!==curId) renderPeople();
+  if(pplFor!==curId){ pplFor=curId; migratePeople(); }
   if(notesFor!==curId){ notesFor=curId; document.querySelectorAll('.nbox textarea').forEach(el=>{ el.value=notes[el.dataset.key]||''; }); }
+  syncCastBox();
   if(tab==='find'){ renderFindList(); if(rubyMode) renderRubyList(); }
   if(tab==='lint') renderLintList();
 }
@@ -1571,43 +1712,60 @@ function jumpTo(i){
   ta.focus({preventScroll:true});
 }
 
-/* 人物：名前と、かんたんなプロフィール（原稿ごとに保存し、同期する） */
-const escA=s=>esc(String(s)).replace(/"/g,'&quot;');
-function people(){ if(!Array.isArray(notes.people)) notes.people=[]; return notes.people; }
-function autoGrow(el){ el.style.height='auto'; el.style.height=Math.max(el.scrollHeight+2,44)+'px'; }
-function renderPeople(){
-  pplFor=curId;
-  const a=Array.isArray(notes.people)?notes.people:[];
-  $('pplCount').textContent=a.length?'人物 '+a.length:'';
-  $('pplList').innerHTML=a.map((x,k)=>`<li><div class="pf"><input type="text" class="pnm" data-k="${k}" value="${escA(x.n||'')}" placeholder="名前" aria-label="名前" autocomplete="off" spellcheck="false"><textarea class="ppr" data-k="${k}" rows="2" placeholder="プロフィール" aria-label="プロフィール">${esc(x.p||'')}</textarea></div><div class="pside">${GRIP}<button type="button" class="pdel" data-k="${k}" title="この人物を削除" aria-label="この人物を削除"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div></li>`).join('');
-  if(tab==='people') $('pplList').querySelectorAll('textarea').forEach(autoGrow);
+/* 人物：上は「人物一覧」（登場人物表のページを付けているときは、そのページと連動）、下は自由に書ける「人物メモ」。
+   以前の版の人物（名前とプロフィールの組）は、名前を人物一覧に、名前とプロフィールを人物メモに移す */
+function migratePeople(){
+  const a=notes.people; if(!Array.isArray(a)) return;
+  const ok=a.filter(x=>x&&((x.n||'').trim()||(x.p||'').trim()));
+  if(ok.length){
+    const names=ok.map(x=>(x.n||'').trim()).filter(Boolean).join('\n');
+    const memo=ok.map(x=>[(x.n||'').trim(),(x.p||'').trim()].filter(Boolean).join('\n')).join('\n\n');
+    if(names) notes.cast=(notes.cast&&notes.cast.trim()?notes.cast.replace(/\n+$/,'')+'\n':'')+names;
+    if(memo) notes.pmemo=(notes.pmemo&&notes.pmemo.trim()?notes.pmemo.replace(/\n+$/,'')+'\n\n':'')+memo;
+  }
+  delete notes.people; notesFor=null; markDirty(); saveCache();
 }
-$('pplList').addEventListener('input',e=>{
-  const el=e.target, k=+el.dataset.k, a=people(); if(!a[k]) return;
-  if(el.classList.contains('pnm')) a[k].n=el.value; else if(el.classList.contains('ppr')){ a[k].p=el.value; autoGrow(el); }
-  $('pplCount').textContent='人物 '+a.length;
-  markDirty(); saveCache();
-});
-$('pplList').addEventListener('click',e=>{
-  const b=e.target.closest('button.pdel'); if(!b) return;
-  /* 1回目で確認の表示にし、もう一度押したら削除する */
-  if(!b.classList.contains('arm')){ b.classList.add('arm'); b.textContent='削除'; setTimeout(()=>{ if(b.isConnected&&b.classList.contains('arm')) renderPeople(); },3000); return; }
-  const a=people(), k=+b.dataset.k, nm=(a[k]&&a[k].n)||'人物';
-  a.splice(k,1); if(!a.length) delete notes.people;
-  markDirty(); saveCache(); renderPeople(); toast('「'+nm+'」を削除しました');
-});
-$('pplAdd').addEventListener('click',()=>{
-  people().push({n:'',p:''}); markDirty(); saveCache(); renderPeople();
-  const ins=$('pplList').querySelectorAll('input.pnm'); if(ins.length) ins[ins.length-1].focus();
-});
-function movePerson(k,t){
-  const a=people(); if(k<0||k>=a.length||t===k||t===k+1) return;
-  const [x]=a.splice(k,1); a.splice(t>k?t-1:t,0,x);
-  markDirty(); saveCache(); renderPeople();
+/* 登場人物表のページの範囲（見出しの次の段落から、登場人物表の終わりまで） */
+function castRange(){
+  const F=frontInfo(); if(!F.cast) return null;
+  const a=F.cast[0]+1, b=F.cast[1];
+  const from=paraStart(a), to=b<types.length?paraStart(b)-1:doc.length;
+  return {a,b,from,to};
+}
+function castText(){ const r=castRange(); return r?(r.b>r.a?doc.slice(r.from,r.to).join(''):''):null; }
+let castTyping=false;
+function syncCastBox(){
+  const el=$('nt-cast'); if(!el) return;
+  const t=castText(); $('castLink').hidden=t==null;
+  if(t==null) return;
+  if((notes.cast||'')!==t){ if(t) notes.cast=t; else delete notes.cast; }
+  if(el.value!==t&&!castTyping){ const f=document.activeElement===el, ss=el.selectionStart; el.value=t; if(f){ const q=Math.min(ss,t.length); el.setSelectionRange(q,q); } }
+}
+/* 人物一覧の欄に書いたとき：登場人物表のページの中身を、欄の内容に置き換える */
+function castBoxIn(v){
+  const r=castRange(); if(!r) return false;
+  const lines=v.replace(/\r\n?/g,'\n').split('\n'), ins=[...lines.join('\n')];
+  if(r.b>r.a&&doc.slice(r.from,r.to).join('')===lines.join('\n')) return true;
+  snapshot('cast');
+  const n0=r.b-r.a;
+  if(n0===0){   /* 登場人物表の中身が空（見出しだけ）のとき：見出しのあとに段落を足す */
+    const he=paraEnd(r.a-1), add=['\n',...ins];
+    doc=doc.slice(0,he).concat(add,doc.slice(he));
+    if(caret>he) caret+=add.length;
+    types.splice(r.a,0,...lines.map(()=>'cast')); pids.splice(r.a,0,...lines.map(()=>newPid()));
+  } else {
+    const delta=ins.length-(r.to-r.from);
+    doc=doc.slice(0,r.from).concat(ins,doc.slice(r.to));
+    if(caret>=r.to) caret+=delta; else if(caret>r.from) caret=Math.min(caret,r.from+ins.length);
+    types.splice(r.a,n0,...lines.map(()=>'cast')); pids.splice(r.a,n0,...lines.map(()=>newPid()));
+  }
+  anchor=null; lastKind='cast'; fixTypes();
+  return true;
 }
 /* メモ：入力のたびに保存（同期の対象） */
 document.querySelectorAll('.nbox textarea').forEach(el=>el.addEventListener('input',()=>{
   const k=el.dataset.key; if(el.value) notes[k]=el.value; else delete notes[k];
+  if(el.id==='nt-cast'&&castBoxIn(el.value)){ castTyping=true; try{ render(); }finally{ castTyping=false; } return; }
   markDirty(); saveCache();
 }));
 
@@ -1639,7 +1797,7 @@ function computeHits(){
   if(!q.length) return;
   outer: for(let i=0;i+q.length<=doc.length;){
     for(let k=0;k<q.length;k++) if(doc[i+k]!==q[k]){ i++; continue outer; }
-    hits.push(i); i+=q.length;
+    if(!isFixed(types[paraOf(i)])) hits.push(i); i+=q.length;
   }
 }
 function curHit(){
@@ -1847,43 +2005,136 @@ function snapshot(kind){
   }
   lastKind=kind; lastT=now; redo=[]; changed=true; docGen++;
 }
+/* つなげてよい段落か：同じまとまり（本文・登場人物表・あらすじ）の中だけ。表紙の行と見出し（【登場人物表】など）はつなげない */
+const canJoin=(a,b)=>ZONE[a]===ZONE[b]&&ZONE[a]!=='cvr'&&ZONE[a]!=='fix';
+const NOSEL='表紙・登場人物表・あらすじの見出しや、ページのまとまりをまたいだ範囲は、まとめて消せません';
+/* 選んだ範囲を消してよいか：1つの段落の中か、同じまとまりの段落だけにかかっているとき */
+function selDeletable(){
+  const r=selRange(); if(!r) return true;
+  const p0=paraAt(r[0]), p1=paraAt(r[1]);
+  if(p0===p1) return !isFixed(types[p0]);
+  const z=ZONE[types[p0]]; if(z==='cvr'||z==='fix') return false;
+  for(let p=p0+1;p<=p1;p++) if(ZONE[types[p]]!==z) return false;
+  return true;
+}
 function insertText(str,back){
   str=str.replace(/\r\n?/g,'\n'); if(!str) return;
-  const lines=str.split('\n');
+  if(selRange()&&!selDeletable()){ toast(NOSEL); return; }
   snapshot(str.length>1||selRange()?'paste':'type');
   removeSel();
-  const p=paraAt(caret);
+  const p=paraAt(caret), t0=types[p];
+  let force=null;
+  if(t0==='brk'||isFixed(t0)){
+    /* 改ページの印と見出し（【登場人物表】など）には書き込めないので、すぐあとに段落を作って入れる */
+    caret=paraEnd(p); force=t0==='brk'?'body':t0==='casthead'?'cast':'syn'; str='\n'+str;
+  } else if(t0==='cvr'){
+    /* 表紙の行：改行は次の行への移動にし、1行は決まった字数までにする */
+    const nl=str.indexOf('\n'), head=nl<0?str:str.slice(0,nl);
+    let add=[...head]; const room=COVER_MAX-(paraEnd(p)-paraStart(p));
+    if(add.length>room){ add=add.slice(0,Math.max(0,room)); toast(`表紙の行は${COVER_MAX}字までです`); }
+    if(add.length){ doc=doc.slice(0,caret).concat(add,doc.slice(caret)); caret+=add.length-(nl<0?(back||0):0); }
+    if(nl>=0&&p+1<types.length){ caret=paraStart(p+1); const tail=str.slice(nl+1); if(tail) insertText(tail,back); }   /* 改行のあとの文字は次の行へ */
+    return;
+  }
+  const lines=str.split('\n'), z=force?ZONE[force]:ZONE[t0];
   const out=[...lines[0]], nt=[];
   for(let k=1;k<lines.length;k++){
-    /* 改行で増える段落は本文。複数の行を貼り付けたときは、「第一章」などで始まる行を見出しにする */
-    nt.push(lines.length>2||lines[k]!==''?detect(lines[k]):'body'); out.push('\n',...lines[k]);
+    /* 改行で増える段落は、登場人物表・あらすじの中ならそのまま。本文では本文にし、複数の行を貼り付けたときは「第一章」などで始まる行を見出しにする */
+    let t=z==='cast'||z==='syn'?z:(lines.length>2||lines[k]!==''?detect(lines[k]):'body');
+    if(k===1&&force) t=force;
+    nt.push(t); out.push('\n',...lines[k]);
   }
   types.splice(p+1,0,...nt); pids.splice(p+1,0,...nt.map(()=>newPid()));
   doc=doc.slice(0,caret).concat(out,doc.slice(caret)); caret+=out.length-(back||0);
 }
 function deleteBack(){
-  if(selRange()){ snapshot('del'); removeSel(); return; }
+  if(selRange()){ if(!selDeletable()){ toast(NOSEL); return; } snapshot('del'); removeSel(); return; }
   if(caret<=0) return;
+  const p=paraAt(caret);
+  if(doc[caret-1]==='\n'){
+    const t=types[p], tp=types[p-1];
+    if(t==='brk'||tp==='brk'){   /* 改ページを取り除く */
+      const q=t==='brk'?p:p-1;
+      snapshot('del'); types.splice(q,1); pids.splice(q,1); doc.splice(caret-1,1); caret--; return;
+    }
+    if(!canJoin(tp,t)){ caret--; lastKind=''; return; }   /* つなげられない段落：カーソルだけ前へ */
+  } else if(isFixed(types[p])) return;
   snapshot('del');
-  if(doc[caret-1]==='\n'){ const p=paraAt(caret); types.splice(p,1); pids.splice(p,1); }
+  if(doc[caret-1]==='\n'){ types.splice(p,1); pids.splice(p,1); }
   doc.splice(caret-1,1); caret--;
 }
 function deleteFwd(){
-  if(selRange()){ snapshot('del'); removeSel(); return; }
+  if(selRange()){ if(!selDeletable()){ toast(NOSEL); return; } snapshot('del'); removeSel(); return; }
   if(caret>=doc.length) return;
+  const p=paraAt(caret);
+  if(doc[caret]==='\n'){
+    const t=types[p], tn=types[p+1];
+    if(t==='brk'||tn==='brk'){
+      const q=t==='brk'?p:p+1;
+      snapshot('del'); types.splice(q,1); pids.splice(q,1); doc.splice(caret,1); return;
+    }
+    if(!canJoin(t,tn)) return;
+  } else if(isFixed(types[p])) return;
   snapshot('del');
-  if(doc[caret]==='\n'){ const p=paraAt(caret)+1; types.splice(p,1); pids.splice(p,1); }
+  if(doc[caret]==='\n'){ types.splice(p+1,1); pids.splice(p+1,1); }
   doc.splice(caret,1);
+}
+/* 改ページ：カーソルの位置で段落を分け、あいだに改ページの印を入れる（段落の頭なら、その段落の前に入れる） */
+function insertBreak(){
+  anchor=null;
+  const p=paraAt(caret), t=types[p];
+  if(ZONE[t]!=='body'){ toast('改ページは本文の中に入れられます'); return; }
+  if(t==='brk'){ toast('ここはすでに改ページです'); return; }
+  snapshot('struct'); lastKind='';
+  const s0=paraStart(p), e0=paraEnd(p);
+  if(caret===s0){ doc.splice(caret,0,'\n'); types.splice(p,0,'brk'); pids.splice(p,0,newPid()); caret++; }
+  else if(caret===e0&&p+1<types.length){ doc.splice(caret,0,'\n'); types.splice(p+1,0,'brk'); pids.splice(p+1,0,newPid()); caret+=2; }
+  else { doc.splice(caret,0,'\n','\n'); types.splice(p+1,0,'brk',caret===e0?'body':t); pids.splice(p+1,0,newPid(),newPid()); caret+=2; }
+  render(); scrollToCaret();
+}
+/* 表紙の付け外し：付けるときは先頭に表紙の行（空の段落）を入れ、外すときはその段落ごと消す */
+function toggleCover(on){
+  const F=frontInfo();
+  if(on&&!F.cv){
+    snapshot('struct'); lastKind='';
+    doc=Array(COVER_N).fill('\n').concat(doc); types.splice(0,0,...Array(COVER_N).fill('cvr')); pids.splice(0,0,...Array.from({length:COVER_N},newPid));
+    caret+=COVER_N;
+  } else if(!on&&F.cv){
+    snapshot('struct'); lastKind='';
+    const end=paraStart(F.cv[1]); doc=doc.slice(end); types.splice(0,F.cv[1]); pids.splice(0,F.cv[1]); caret=Math.max(0,caret-end);
+  }
+  anchor=null; fixTypes();
+}
+/* 登場人物表・あらすじのページの付け外し。登場人物表には人物一覧の内容を入れる。あらすじを外すと中身も消える（「元に戻す」で戻せる） */
+function setFrontOn(kind,on){
+  const F=frontInfo(), cur=kind==='cast'?F.cast:F.syn;
+  if(on&&!cur){
+    snapshot('struct'); lastKind='';
+    const c0=F.cv?F.cv[1]:0, q=kind==='cast'?c0:(F.cast?F.cast[1]:c0), at=paraStart(q);
+    const lines=kind==='cast'?(notes.cast||'').replace(/\r\n?/g,'\n').replace(/\n+$/,'').split('\n'):[''];
+    const ins=[...(kind==='cast'?CAST_HEAD:SYN_HEAD),'\n',...lines.join('\n'),'\n'];
+    doc=doc.slice(0,at).concat(ins,doc.slice(at));
+    types.splice(q,0,kind==='cast'?'casthead':'synhead',...lines.map(()=>kind));
+    pids.splice(q,0,newPid(),...lines.map(()=>newPid()));
+    if(caret>=at) caret+=ins.length;
+  } else if(!on&&cur){
+    snapshot('struct'); lastKind='';
+    const a=paraStart(cur[0]), b=paraStart(cur[1]);
+    doc=doc.slice(0,a).concat(doc.slice(b)); types.splice(cur[0],cur[1]-cur[0]); pids.splice(cur[0],cur[1]-cur[0]);
+    if(caret>=b) caret-=b-a; else if(caret>a) caret=a;
+  }
+  anchor=null; fixTypes();
 }
 /* 段落の書式（本文／見出し）：選択範囲にかかる段落をまとめて変える */
 function setType(t){
   if(!NAMES[t]) return;
   const r=selRange();
   const p0=paraAt(r?r[0]:caret), p1=r?paraAt(Math.max(r[0],r[1]-1)):p0;
-  let same=true; for(let p=p0;p<=p1;p++) if(types[p]!==t) same=false;
-  if(same) return;
+  /* 変えられるのは本文と見出しの段落だけ（改ページ・表紙・登場人物表・あらすじはそのまま） */
+  const ps=[]; for(let p=p0;p<=p1;p++) if(types[p]==='body'||types[p]==='head') ps.push(p);
+  if(!ps.length||ps.every(p=>types[p]===t)) return;
   snapshot('format'); lastKind='';
-  for(let p=p0;p<=p1;p++) types[p]=t;
+  for(const p of ps) types[p]=t;
   render(); if(!r) scrollToCaret();
 }
 function restore(from,to){
@@ -1904,11 +2155,14 @@ function idxAt(col,r){
   return col.end;
 }
 function colMove(d,ext){
-  const {c,r}=caretCR(); const nc=c+d;
+  const {c,r}=caretCR(); let nc=c+d;
+  while(nc>=0&&nc<L.cols.length&&L.cols[nc].filler) nc+=d;   /* ページを送るための空いた行は飛ばす */
   if(nc<0){ move(0,ext); return; }
   if(nc>=L.cols.length){ move(doc.length,ext); return; }
   move(idxAt(L.cols[nc],Math.min(r,ROWS)),ext);
 }
+/* 段落 p の終わり（改行の位置。最後の段落なら原稿の終わり） */
+function paraEnd(p){ const s0=paraStart(p); for(let k=s0;k<doc.length;k++) if(doc[k]==='\n') return k; return doc.length; }
 function paraStart(p){
   if(p<=0) return 0;
   let n=0; for(let k=0;k<doc.length;k++) if(doc[k]==='\n'&&++n===p) return k+1;
@@ -1920,10 +2174,15 @@ function selRange(){
   return [Math.min(anchor,caret),Math.max(anchor,caret)];
 }
 function removeSel(){
-  const r=selRange(); anchor=null; if(!r) return false;
+  const r=selRange();
+  if(r&&!selDeletable()){ anchor=null; toast(NOSEL); return false; }
+  anchor=null; if(!r) return false;
   let k=0; for(let i=r[0];i<r[1];i++) if(doc[i]==='\n') k++;
-  const p=paraAt(r[0])+1;
-  types.splice(p,k); pids.splice(p,k); doc.splice(r[0],r[1]-r[0]); caret=r[0]; fixTypes();
+  const p=paraAt(r[0])+1, tl=types[p-1+k];
+  types.splice(p,k); pids.splice(p,k); doc.splice(r[0],r[1]-r[0]); caret=r[0];
+  /* 改ページの印から始まる範囲を消して、あとの段落の文字が残ったときは、その段落の書式にする */
+  if(k&&types[p-1]==='brk'&&paraEnd(p-1)>paraStart(p-1)) types[p-1]=tl;
+  fixTypes();
   return true;
 }
 /* 傍点：選んだ文字に付ける／カーソルのある傍点を外す */
@@ -2252,10 +2511,11 @@ $('bRedo').addEventListener('click',()=>{ restore(redo,undo); refocus(); });
 let toastTimer=0;
 function toast(msg,ms){ const t=$('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.hidden=true,ms||2600); }
 $('fbClose').addEventListener('click',()=>$('fallback').hidden=true);
-titleIn.addEventListener('input',()=>{ title=titleIn.value; markDirty(); saveCache(); });
+titleIn.addEventListener('input',()=>{ title=titleIn.value; markDirty(); saveCache(); paintCover(); });
 
 $('bEmph').addEventListener('click',()=>{ toggleEmph(); refocus(); });
-/* 並べ替え：つまみをドラッグする（目次と人物で共通） */
+$('bBrk').addEventListener('click',()=>{ insertBreak(); refocus(); });
+/* 並べ替え：つまみをドラッグする（目次） */
 function dragList(list,onMove){
   let drag=null;
   const scroller=el=>{ for(let e=el;e;e=e.parentElement){ const o=getComputedStyle(e).overflowY; if((o==='auto'||o==='scroll')&&e.scrollHeight>e.clientHeight) return e; } return null; };
@@ -2301,7 +2561,6 @@ function moveChapter(k,t){
   toast('「'+(items[k].text||'見出し')+'」の章を移しました（「元に戻す」で戻せます）',3500);
 }
 dragList($('olList'),moveChapter);
-dragList($('pplList'),movePerson);
 
 /* ---------- 外見：字詰めと行間（この端末に記憶） ---------- */
 function updLookNote(){
@@ -2335,6 +2594,205 @@ $('lhSel').addEventListener('click',e=>{
 ta.addEventListener('compositionstart',()=>document.documentElement.classList.add('composing'));
 ta.addEventListener('compositionend',()=>document.documentElement.classList.remove('composing'));
 ta.addEventListener('blur',()=>document.documentElement.classList.remove('composing'));
+
+/* PDF用：縦書きのときに字形を移す（t）・90度回す（r）字と、縦書き専用の字形（私用領域の文字）。Hongaki と同じ */
+const VT={"ぁ":["t",149,140],"ぃ":["t",161,146],"ぅ":["t",161,148],"ぇ":["t",160,148],"ぉ":["t",140,148],"ゕ":["t",160,149],"ゖ":["t",160,148],"っ":["t",144,148],"ゃ":["t",161,134],"ゅ":["t",160,147],"ょ":["t",160,146],"ゎ":["t",161,146],"ァ":["t",161,146],"ィ":["t",160,147],"ゥ":["t",160,146],"ェ":["t",160,148],"ォ":["t",162,146],"ヵ":["t",162,146],"ㇰ":["t",162,146],"ヶ":["t",162,146],"ㇱ":["t",160,146],"ㇲ":["t",160,146],"ッ":["t",160,147],"ㇳ":["t",160,147],"ㇴ":["t",160,148],"ㇵ":["t",160,146],"ㇶ":["t",162,146],"ㇷ":["t",160,147],"ㇸ":["t",160,147],"ㇹ":["t",161,146],"ㇺ":["t",161,146],"ャ":["t",160,147],"ュ":["t",160,146],"ョ":["t",160,148],"ㇻ":["t",160,146],"ㇼ":["t",160,146],"ㇽ":["t",162,148],"ㇾ":["t",160,149],"ㇿ":["t",161,147],"ヮ":["t",161,146],"…":["r",120,880],"‥":["r",120,880],"，":["t",662,670],"．":["t",664,664],"〈":["r",120,880],"〉":["r",120,880],"【":["r",120,880],"】":["r",120,880],"｛":["r",120,824],"｝":["r",120,934],"「":["r",102,880],"」":["r",138,878],"《":["r",120,880],"》":["r",120,880],"〔":["r",120,880],"〕":["r",120,880],"『":["r",120,875],"』":["r",120,885],"（":["r",120,881],"）":["r",120,879],"―":["r",120,880],"〜":["r",120,880],"〟":["r",119,895],"〝":["r",120,865],"、":["t",625,653],"。":["t",593,605],"～":["r",120,880],"＝":["r",120,880],"ー":["r",120,862]};
+const VP={"―":"","‥":"","…":"","⋯":"","〈":"","〉":"","⎰":"","⎱":"","、":"","。":"","〆":"","〈":"","〉":"","《":"","》":"","「":"","」":"","『":"","』":"","【":"","】":"","〔":"","〕":"","〖":"","〗":"","〘":"","〙":"","〚":"","〛":"","〜":"","〝":"","〞":"","〟":"","〮":"","〯":"","ぁ":"","あ":"","ぃ":"","い":"","ぅ":"","う":"","ぇ":"","え":"","ぉ":"","お":"","か":"","が":"","き":"","ぎ":"","く":"","ぐ":"","け":"","げ":"","こ":"","ご":"","さ":"","ざ":"","し":"","じ":"","す":"","ず":"","せ":"","ぜ":"","そ":"","ぞ":"","た":"","だ":"","ち":"","ぢ":"","っ":"","つ":"","づ":"","て":"","で":"","と":"","ど":"","な":"","に":"","ぬ":"","ね":"","の":"","は":"","ば":"","ぱ":"","ひ":"","び":"","ぴ":"","ふ":"","ぶ":"","ぷ":"","へ":"","べ":"","ぺ":"","ほ":"","ぼ":"","ぽ":"","ま":"","み":"","む":"","め":"","も":"","ゃ":"","や":"","ゅ":"","ゆ":"","ょ":"","よ":"","ら":"","り":"","る":"","れ":"","ろ":"","ゎ":"","わ":"","ゐ":"","ゑ":"","を":"","ん":"","ゔ":"","ゕ":"","ゖ":"","゛":"","゜":"","ゝ":"","ゞ":"","ゟ":"","゠":"","ァ":"","ア":"","ィ":"","イ":"","ゥ":"","ウ":"","ェ":"","エ":"","ォ":"","オ":"","カ":"","ガ":"","キ":"","ギ":"","ク":"","グ":"","ケ":"","ゲ":"","コ":"","ゴ":"","サ":"","ザ":"","シ":"","ジ":"","ス":"","ズ":"","セ":"","ゼ":"","ソ":"","ゾ":"","タ":"","ダ":"","チ":"","ヂ":"","ッ":"","ツ":"","ヅ":"","テ":"","デ":"","ト":"","ド":"","ナ":"","ニ":"","ヌ":"","ネ":"","ノ":"","ハ":"","バ":"","パ":"","ヒ":"","ビ":"","ピ":"","フ":"","ブ":"","プ":"","ヘ":"","ベ":"","ペ":"","ホ":"","ボ":"","ポ":"","マ":"","ミ":"","ム":"","メ":"","モ":"","ャ":"","ヤ":"","ュ":"","ユ":"","ョ":"","ヨ":"","ラ":"","リ":"","ル":"","レ":"","ロ":"","ヮ":"","ワ":"","ヰ":"","ヱ":"","ヲ":"","ン":"","ヴ":"","ヵ":"","ヶ":"","ヷ":"","ヸ":"","ヹ":"","ヺ":"","ー":"","ヽ":"","ヾ":"","ㇰ":"","ㇱ":"","ㇲ":"","ㇳ":"","ㇴ":"","ㇵ":"","ㇶ":"","ㇷ":"","ㇸ":"","ㇹ":"","ㇺ":"","ㇻ":"","ㇼ":"","ㇽ":"","ㇾ":"","ㇿ":"","㋿":"","㌀":"","㌁":"","㌂":"","㌃":"","㌄":"","㌅":"","㌆":"","㌇":"","㌈":"","㌉":"","㌊":"","㌋":"","㌌":"","㌍":"","㌎":"","㌏":"","㌐":"","㌑":"","㌒":"","㌓":"","㌔":"","㌕":"","㌖":"","㌗":"","㌘":"","㌙":"","㌚":"","㌛":"","㌜":"","㌝":"","㌞":"","㌟":"","㌠":"","㌡":"","㌢":"","㌣":"","㌤":"","㌥":"","㌦":"","㌧":"","㌨":"","㌩":"","㌪":"","㌫":"","㌭":"","㌮":"","㌯":"","㌰":"","㌱":"","㌲":"","㌳":"","㌴":"","㌵":"","㌶":"","㌷":"","㌸":"","㌹":"","㌺":"","㌻":"","㌼":"","㌽":"","㌾":"","㌿":"","㍀":"","㍁":"","㍂":"","㍃":"","㍄":"","㍅":"","㍆":"","㍇":"","㍈":"","㍉":"","㍊":"","㍋":"","㍌":"","㍍":"","㍎":"","㍏":"","㍐":"","㍑":"","㍒":"","㍓":"","㍔":"","㍕":"","㍖":"","㍗":"","㍻":"","㍼":"","㍽":"","㍾":"","㍿":"","（":"","）":"","，":"","．":"","：":"","＝":"","［":"","］":"","＿":"","｛":"","｜":"","｝":"","～":"","｟":"","｠":"","￣":""};
+/* ---------- PDF：A4横置き。字数・行数・書体・文字の大きさ・余白は、出力のたびに指定する（原稿ごとに覚える） ---------- */
+const PDF_DEF={c:40,l:30,f:'mincho',s:10.5,ts:16,m:[25,25,25,25]};   /* m：上・下・右・左（mm） */
+const PDF_PW=297, PDF_PH=210, PT_MM=25.4/72;
+function pdfOpt(){
+  const o=Object.assign({},PDF_DEF,notes.pdf||{});
+  o.m=Array.isArray(o.m)&&o.m.length===4?o.m.slice():PDF_DEF.m.slice();
+  return o;
+}
+function pdfSave(o){ notes.pdf=o; markDirty(); saveCache(); }
+const clampN=(v,lo,hi,d)=>{ v=parseFloat(v); return Number.isFinite(v)?Math.max(lo,Math.min(hi,v)):d; };
+const mm1=v=>(Math.round(v*10)/10).toFixed(1);
+/* 字送り・行送りと、入るかどうか */
+function pdfGeo(o){
+  const fs=o.s*PT_MM, aH=PDF_PH-o.m[0]-o.m[1], aW=PDF_PW-o.m[2]-o.m[3];
+  const jo=aH/o.c, go=o.l>1?aW/o.l:aW;
+  return {fs,aH,aW,jo,go,top:o.m[0],right:PDF_PW-o.m[2]};
+}
+/* 半角の文字の長さ（字送りを1とした値）：画面のフォントで測った幅から求める（PDFでは、PDFのフォントで測り直す） */
+const pdfAdvScreen=(fs,jo)=>ch=>advOf(ch)/GLYPH*fs/jo;
+function pdfLayout(o,adv){
+  const g=pdfGeo(o);
+  return layout(doc,o.c,{print:true,per:o.l,own:true,adv:adv||pdfAdvScreen(g.fs,g.jo)});
+}
+
+/* パネル */
+let pdT=0;
+function openPdf(){
+  ta.blur(); fillPdf(); $('pdfPanel').hidden=false;
+}
+function fillPdf(){
+  const o=pdfOpt(), F=frontInfo();
+  $('pdChars').value=o.c; $('pdLines').value=o.l; $('pdSize').value=o.s; $('pdTsize').value=o.ts;
+  ['pdMt','pdMb','pdMr','pdMl'].forEach((id,k)=>{ $(id).value=o.m[k]; });
+  document.querySelectorAll('#pdPre button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.c===o.c&&+b.dataset.l===o.l)));
+  document.querySelectorAll('#pdSizes button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.s===o.s)));
+  document.querySelectorAll('#pdFont button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===o.f)));
+  $('pdCover').checked=!!F.cv; $('pdCast').checked=!!F.cast; $('pdSyn').checked=!!F.syn;
+  $('pdTsize').disabled=!F.cv;
+  clearTimeout(pdT); pdT=setTimeout(checkPdf,doc.length>50000?300:0);
+}
+/* 確認：入らないときは、余白をどれだけにすれば入るかを示す */
+function checkPdf(){
+  const o=pdfOpt(), g=pdfGeo(o), res=$('pdRes'), fix=$('pdFixBox');
+  let msg='', cls='ok', act=null;
+  if(g.jo<g.fs-1e-9){
+    const m=Math.floor((PDF_PH-o.c*g.fs)/2*10)/10;
+    msg=`1行に${o.c}字が入りません。字送り（${mm1(g.jo)}mm）が文字の大きさ（${mm1(g.fs)}mm）より小さく、文字が重なります。`;
+    if(m>=5){ msg+=`上下の余白を${m}mmにすると入ります。`; act={t:`上下の余白を${m}mmにする`,f:()=>{ o.m[0]=o.m[1]=m; }}; }
+    else msg+='文字を小さくするか、1行の字数を減らしてください。';
+    cls='ng';
+  } else if(g.go<g.fs-1e-9){
+    const m=Math.floor((PDF_PW-o.l*g.fs)/2*10)/10;
+    msg=`1ページに${o.l}行が入りません。行送り（${mm1(g.go)}mm）が文字の大きさ（${mm1(g.fs)}mm）より小さく、文字が重なります。`;
+    if(m>=5){ msg+=`左右の余白を${m}mmにすると入ります。`; act={t:`左右の余白を${m}mmにする`,f:()=>{ o.m[2]=o.m[3]=m; }}; }
+    else msg+='文字を小さくするか、1ページの行数を減らしてください。';
+    cls='ng';
+  } else {
+    const LL=pdfLayout(o), n=Math.max(1,Math.ceil(LL.cols.length/o.l)), body=n-LL.mainCol/o.l, F=LL.F;
+    const fr=[F.cv&&'表紙',F.cast&&'登場人物表',F.syn&&'あらすじ'].filter(Boolean);
+    msg=`A4横置き・本文${Math.max(0,body)}ページ${fr.length?'と、'+fr.join('・'):''}\n字送り${mm1(g.jo)}mm（字間${mm1(g.jo-g.fs)}mm）・行送り${mm1(g.go)}mm（行間${mm1(g.go-g.fs)}mm）`;
+    const rs=g.fs/2;
+    if(L&&L.rubies&&L.rubies.length&&g.go-g.fs<rs-1e-9){ msg+=`\n行間（${mm1(g.go-g.fs)}mm）がルビの大きさ（${mm1(rs)}mm）より狭いため、ルビが隣の行にかかります。`; cls='warn'; }
+  }
+  res.textContent=msg; res.className='pdres '+cls;
+  fix.hidden=!act; if(act){ $('pdFix').textContent=act.t; $('pdFix').onclick=()=>{ act.f(); pdfSave(o); fillPdf(); }; }
+  $('pdMake').disabled=cls==='ng';
+}
+function pdfNum(id,key,lo,hi,k){
+  $(id).addEventListener('change',()=>{
+    const o=pdfOpt(), d=k==null?o[key]:o.m[k];
+    let v=clampN($(id).value,lo,hi,d); if(key==='c'||key==='l') v=Math.round(v); else v=Math.round(v*10)/10;
+    if(k==null) o[key]=v; else o.m[k]=v;
+    pdfSave(o); fillPdf();
+  });
+}
+pdfNum('pdChars','c',10,60); pdfNum('pdLines','l',5,60); pdfNum('pdSize','s',6,30); pdfNum('pdTsize','ts',6,48);
+pdfNum('pdMt','m',5,80,0); pdfNum('pdMb','m',5,80,1); pdfNum('pdMr','m',5,80,2); pdfNum('pdMl','m',5,80,3);
+$('pdPre').addEventListener('click',e=>{ const b=e.target.closest('button[data-c]'); if(!b) return; const o=pdfOpt(); o.c=+b.dataset.c; o.l=+b.dataset.l; pdfSave(o); fillPdf(); });
+$('pdSizes').addEventListener('click',e=>{ const b=e.target.closest('button[data-s]'); if(!b) return; const o=pdfOpt(); o.s=+b.dataset.s; pdfSave(o); fillPdf(); });
+$('pdFont').addEventListener('click',e=>{ const b=e.target.closest('button[data-f]'); if(!b) return; const o=pdfOpt(); o.f=b.dataset.f; pdfSave(o); fillPdf(); });
+$('pdCover').addEventListener('change',()=>{
+  toggleCover($('pdCover').checked); render(); fillPdf();
+  toast($('pdCover').checked?'表紙を付けました。エディターの最初のページで、題名の右と左の行に書き込めます':'表紙を外しました（「元に戻す」で戻せます）',3500);
+});
+$('pdCast').addEventListener('change',()=>{
+  setFrontOn('cast',$('pdCast').checked); render(); fillPdf();
+  toast($('pdCast').checked?'登場人物表のページを付けました。人物パネルの「人物一覧」と連動します':'登場人物表のページを外しました。人物一覧の内容は残ります',3500);
+});
+$('pdSyn').addEventListener('change',()=>{
+  setFrontOn('syn',$('pdSyn').checked); render(); fillPdf();
+  toast($('pdSyn').checked?'あらすじのページを付けました。エディターで、見出しのあとに書き込めます':'あらすじのページを外しました（「元に戻す」で戻せます）',3500);
+});
+$('pdClose').addEventListener('click',()=>$('pdfPanel').hidden=true);
+$('pdCancel').addEventListener('click',()=>$('pdfPanel').hidden=true);
+$('pdfPanel').addEventListener('click',e=>{ if(e.target===$('pdfPanel')) $('pdfPanel').hidden=true; });
+$('pPdf').addEventListener('click',()=>{ closeDP(); openPdf(); });
+
+/* 出力 */
+const fontB64s={};
+const pdfFontFile=o=>(o.f==='gothic'?'notosansjp':'notoserifjp')+'-400-v.ttf';
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('script')); document.head.appendChild(s); }); }
+async function ensurePdfKit(o){
+  if(!(window.jspdf&&window.jspdf.jsPDF)) await loadScript('jspdf.umd.min.js');
+  const file=pdfFontFile(o);
+  if(!fontB64s[file]){
+    const resp=await fetch(file); if(!resp.ok) throw new Error('font');
+    const blob=await resp.blob();
+    fontB64s[file]=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(blob); });
+  }
+}
+function buildPdf(o){
+  const pdf=new window.jspdf.jsPDF({orientation:'landscape',unit:'mm',format:'a4',compress:true});
+  const ff=pdfFontFile(o); pdf.addFileToVFS(ff,fontB64s[ff]); pdf.addFont(ff,'Bunpitu','normal','Identity-H'); pdf.setFont('Bunpitu','normal');
+  pdf.setProperties({title:title||'無題'});
+  const g=pdfGeo(o), fs=g.fs, jo=g.jo, go=g.go, top=g.top;
+  /* 半角の文字の長さは、PDFのフォントで測る */
+  const adv=ch=>{ const w=pdf.getStringUnitWidth(ch); return (w>0?w:(ch===' '?0.25:0.5))*fs/jo; };
+  const LL=layout(doc,o.c,{print:true,per:o.l,own:true,adv}), cols=LL.cols, n=Math.max(1,Math.ceil(cols.length/o.l));
+  const setSize=s=>pdf.setFontSize(s/PT_MM);
+  let bold=false;
+  const opt=a=>{ const x={}; if(a) x.angle=a; if(bold) x.renderingMode='fillThenStroke'; return x; };
+  /* 全角の字：中心（cx, cy）に、大きさ s で置く。縦書き用の字形があればそれを使い、なければ位置を移すか90度回す */
+  function drawCh(ch,cx,cy,s){
+    if(ch===' '||ch==='　') return;
+    setSize(s); if(bold) pdf.setLineWidth(s*0.022);
+    const k=s/1000, ex=cx-s/2, by=cy-s/2+880*k, vp=VP[ch];
+    if(vp){ pdf.text(vp,ex,by,opt()); return; }
+    const v=VT[ch];
+    if(!v) pdf.text(ch,ex,by,opt());
+    else if(v[0]==='t') pdf.text(ch,ex+v[1]*k,by-v[2]*k,opt());
+    else pdf.text(ch,ex+v[1]*k,by-v[2]*k,opt(-90));
+  }
+  /* 半角の字：時計回りに90度回し、字の頭を y に合わせて置く */
+  function drawLat(ch,cx,y,s){
+    if(ch===' ') return;
+    setSize(s); if(bold) pdf.setLineWidth(s*0.022);
+    pdf.text(ch,cx-s*0.38,y,opt(-90));
+  }
+  const colCx=lc=>g.right-go*lc-go/2;
+  const pnoS=Math.max(8,Math.min(12,o.s*0.9))*PT_MM;
+  for(let p=0;p<n;p++){
+    if(p) pdf.addPage();
+    if(p===0&&LL.F.cv){
+      /* 表紙：題名をページの中央に縦書き。書き出しは本文の1字目と同じ高さ。長いときは折り返す */
+      bold=false;
+      const ts=o.ts*PT_MM, pitch=ts*1.2, per=Math.max(1,Math.floor(g.aH/pitch)), tc=[...(title||'')];
+      const lines=[]; for(let k=0;k<tc.length;k+=per) lines.push(tc.slice(k,k+per));
+      const lstep=ts*1.7, totalW=lines.length?(lines.length-1)*lstep:0;
+      lines.forEach((cc,j)=>cc.forEach((ch,r)=>{
+        const cx=PDF_PW/2+totalW/2-j*lstep, y0=top+r*pitch;
+        if(isLat(ch)) drawLat(ch,cx,y0+(pitch-ts*0.6)/2,ts); else drawCh(ch,cx,y0+pitch/2,ts);
+      }));
+    }
+    for(let lc=0;lc<o.l;lc++){
+      const c=p*o.l+lc, col=cols[c]; if(!col||col.filler||col.t==='brk') continue;
+      const cx=colCx(lc), sq=col.squeeze||1;
+      bold=col.t==='head'||col.t==='casthead'||col.t==='synhead';
+      pdf.setDrawColor(0,0,0);
+      for(let k=col.start;k<col.end;k++){
+        if(LL.hidden[k]) continue;
+        const ch=doc[k], r=LL.SR[k], a=LL.SA[k];
+        if(isLat(ch)) drawLat(ch,cx,top+r*jo,fs*sq);
+        else drawCh(ch,cx,top+(r+a/2)*jo,fs*sq);
+      }
+      bold=false;
+      /* ルビ：親文字の右側に、親文字の長さの中で均等に並べる */
+      const rbs=LL.rubyAt.get(c);
+      if(rbs) for(const rb of rbs){
+        const rc=[...rb.text], rs=fs/2, H=rb.h*jo, y0=top+rb.r0*jo;
+        const gap=rc.length*rs<H?H/rc.length:rs, off=rc.length*rs<H?0:(H-rc.length*rs)/2;
+        rc.forEach((ch,k)=>drawCh(ch,cx+fs/2+rs/2,y0+off+k*gap+gap/2,rs));
+      }
+      /* 傍点：字の右側に */
+      const dts=LL.dotAt.get(c);
+      if(dts) for(const dt of dts) drawCh('﹅',cx+fs*0.86,top+(dt.r+0.5)*jo,fs*0.45);
+    }
+    /* ページ番号：本文の各ページの下の中央（本文の前のページには付けない） */
+    if(p*o.l>=LL.mainCol){
+      setSize(pnoS); pdf.text(String(p-LL.mainCol/o.l+1),PDF_PW/2,PDF_PH-o.m[1]/2+pnoS*0.35,{align:'center'});
+    }
+  }
+  return pdf.output('blob');
+}
+$('pdMake').addEventListener('click',async()=>{
+  const o=pdfOpt(), b=$('pdMake'); if(b.disabled) return;
+  b.disabled=true; b.textContent='PDFを作成中…';
+  let blob=null;
+  try{ await ensurePdfKit(o); blob=buildPdf(o); }
+  catch(e){ toast('PDFを作成できませんでした。通信状態を確かめて、もう一度お試しください'); }
+  b.textContent='PDFを作る'; b.disabled=false;
+  if(blob) await savePdf(fileName('.pdf'),blob);
+});
+
+/* PDFの保存：iPadでは共有の画面、Macではダウンロード */
+async function savePdf(name,blob){ await saveFile(name,blob,'application/pdf'); }
 
 /* ---------- 「その他」パネル ---------- */
 const fmtDate=t=>{ if(!t) return ''; const d=new Date(t); return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`; };
@@ -2663,7 +3121,7 @@ $('pNew').addEventListener('click',async()=>{ closeDP(); await newDoc(); });
 $('pDelete').addEventListener('click',()=>{ $('pDelete').hidden=true; $('pDelConfirm').hidden=false; });
 $('pDelNo').addEventListener('click',()=>{ $('pDelete').hidden=false; $('pDelConfirm').hidden=true; });
 $('pDelYes').addEventListener('click',async()=>{ $('pDelete').hidden=false; $('pDelConfirm').hidden=true; closeDP(); await deleteCurrent(); });
-$('pCopy').addEventListener('click',()=>copyText(plainOut(getPlain(0,doc.length))));
+$('pCopy').addEventListener('click',()=>copyText(plainOut(getPlain(afterCover(),doc.length))));
 
 /* ファイルの保存：iPadは共有シート（「ファイル」に保存など）、Macはダウンロード */
 const fileName=ext=>(title||'無題').replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_').slice(0,80)+ext;
@@ -2679,7 +3137,7 @@ async function saveFile(name,data,type){
   a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
-$('pTxt').addEventListener('click',()=>saveFile(fileName('.txt'),plainOut(getPlain(0,doc.length)),'text/plain;charset=utf-8'));
+$('pTxt').addEventListener('click',()=>saveFile(fileName('.txt'),plainOut(getPlain(afterCover(),doc.length)),'text/plain;charset=utf-8'));
 
 /* テキストの読み込み */
 $('pImport').addEventListener('click',()=>$('fileIn').click());
