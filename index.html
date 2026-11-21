@@ -355,7 +355,7 @@ html.nopno .pno{display:none}
 .tools button.pg{min-width:36px;padding:0 6px}
 /* 上のボタンは、左パネルのタブと同じ大きさ（高さ30px・文字13px）にそろえる */
 .tools button{min-height:30px;font-size:13px;border-radius:6px}
-.panel button{font-size:13px}   /* 「外見」「その他」のパネルのボタンも13pxにそろえる */
+.panel button{font-size:13px;min-height:30px;border-radius:6px}   /* 「外見」「その他」のパネルのボタンも、上のボタンと同じ大きさ（高さ30px・文字13px）にそろえる */
 .tools .seg{border-radius:6px}
 .tools .seg button{min-width:58px}
 .tools button.ico{min-width:36px;padding:0 8px}
@@ -462,6 +462,9 @@ html.ipad.composing #ta{caret-color:var(--caret)}
 #olList li.shifting{transition:transform .16s ease}
 #olList li.lifting{position:relative;z-index:5;background:var(--paper);border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.18),0 1px 3px rgba(0,0,0,.12);transition:none;opacity:1}
 #olList li.lifting .grip{cursor:grabbing;opacity:1}
+/* 題名の欄：ボタンが1行に入りきらない幅のときだけ、題名の欄を狭める（ボタンより先に、題名の欄を縮める）。
+   入りきるときは、これまでと同じ幅のまま */
+#title{flex-shrink:1000}
 /* ---------- ウェブアプリ版：同期のログインと、同期の確認中の表示（Hongaki と同じ） ---------- */
 .sybox{display:flex;flex-direction:column;gap:8px}
 .sybox input{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--edge);border-radius:7px;background:var(--paper);color:var(--ink)}
@@ -625,7 +628,7 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
       </div>
     </div>
     <div class="small">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
-    <div class="small">Version 1.09</div>
+    <div class="small">Version 1.10</div>
   </div>
 </div>
 <div class="scrim" id="manPanel" hidden>
