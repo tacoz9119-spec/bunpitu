@@ -464,7 +464,7 @@ html.ipad.composing #ta{caret-color:var(--caret)}
 #olList li.lifting .grip{cursor:grabbing;opacity:1}
 /* 題名の欄：ボタンが1行に入りきらない幅のときだけ、題名の欄を狭める（ボタンより先に、題名の欄を縮める）。
    入りきるときは、これまでと同じ幅のまま */
-#title{flex-shrink:1000}
+#title{flex-shrink:100000}
 /* パソコンで見たときの上部の帯：上下の余白を11pxにして、区切りの線を含めて55pxにする（Kousei・Tebikae とそろえる）。
    iPad（ホーム画面のアプリ・Safari）と集中モードの帯は、これまでどおり */
 html:not(.ipad):not(.focus) .bar{padding-block:11px}
@@ -478,6 +478,88 @@ html:not(.ipad):not(.focus) .bar{padding-block:11px}
 html.syncwait .tools,html.syncwait main,html.syncwait #outline{pointer-events:none}
 html.syncwait main{opacity:.55;transition:opacity .2s .4s}
 html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄くする表示が上端のぼかしのきっかけになることがあるため使わない */
+/* ===== シリーズ共通の大きさの基準（Kousei 1.41・Hongaki 1.49 と同じ） =====
+   押すものと入力欄は高さ36px。文字は、題名18px（太字）、ボタン・見出し・説明文・入力欄15px、補足12px。
+   角の丸みは、外枠14px、中の枠と浮かぶ枠10px、入力欄と一覧の枠8px、ボタン6px。ボタンの文字は1px上げる（下に2pxの余白）。
+   例外：原稿のページの上に描くもの、原稿の文をそのまま見せる部分、題名の欄の文字、目次のつまみ、「編集中」の札 */
+
+/* 上部の帯：36pxのボタンが入って、線を含めて55px（Mac・iPad と iPhone の Safari）。
+   iPad のホーム画面のアプリ（ボタンの上端31px）と集中モードは、これまでの指定のまま */
+html:not(.ipadapp):not(.focus) .bar{padding-block:9px}
+#title{height:36px;box-sizing:border-box}   /* 下線だけの欄：文字は18px・太さふつうのまま（例外） */
+.stats,#sSave{font-size:12px}
+html.ipadapp #topInfo{font-size:12px}
+
+/* 押すもの：高さ36px・文字15px・角6px。文字は1px上げる */
+.tools button,.panel button{min-height:36px;font-size:15px;border-radius:6px}
+.tools button:not(.ico),.panel button{padding-top:0;padding-bottom:2px}
+.tools button.ico,.tools button.pg{min-width:36px;width:36px;padding:0}
+.tools button.ico svg{width:16px;height:16px}
+@media (max-width:1240px){ .tools button.ico,.tools button.pg{min-width:36px;width:36px;padding:0} }
+#bFocusOff{width:36px;height:36px;border-radius:6px}
+
+/* 切り替え：外枠1px・区切り線でつなぎ、高さ36px（中のボタンは枠いっぱい）・文字15px（ふつう）・外枠の角6px。選んだものは墨色 */
+.seg,.tabs{border-radius:6px}
+.tools .seg button{min-height:34px;min-width:60px}
+@media (max-width:1240px){ .tools .seg button{min-width:52px} }
+.tabs button{min-height:34px;font-size:15px!important;padding-top:0;padding-bottom:2px}
+.pbtns[role="group"]{display:inline-flex;flex-wrap:nowrap;gap:0;align-self:flex-start;border:1px solid var(--edge);border-radius:6px;overflow:hidden;width:max-content;max-width:100%}
+.pbtns[role="group"] button,.rmode button{border:0!important;border-radius:0!important;border-left:1px solid var(--edge)!important;min-height:34px!important;font-size:15px!important;padding:0 12px 2px!important;background:var(--paper)}
+.pbtns[role="group"] button:first-child,.rmode button:first-child{border-left:0!important}
+.pbtns[role="group"] button[aria-pressed="true"]{background:var(--ink)!important;color:var(--paper)!important}
+.rrow{flex-wrap:wrap}
+
+/* 左パネル */
+.frow button{min-height:36px;font-size:15px!important;padding:0 12px 2px}
+.fbox input{min-height:36px;box-sizing:border-box;padding:6px 10px;font-size:15px;border-radius:8px}
+.nbox label,.tabhead .lbl{font-size:12px}
+.nbox textarea{font-size:15px;border-radius:8px}
+#lList .lfix{min-height:36px;font-size:15px!important;padding:0 12px 2px}
+/* 2段・3段の一覧（目次・校正・検索・ルビの一覧）：枠は付けず今の形のまま、項目15px・ほかの段12px */
+#olList button{font-size:15px}
+#olList .n,#olList .m{font-size:12px}
+#lList .k{font-size:15px;font-weight:400}
+#lList .m,#lList .s{font-size:12px}
+#rList .r{font-size:15px;font-weight:400}
+#rList .r small{font-size:12px}
+#rList .m,#rList .s{font-size:12px}
+#rList .gh{font-size:15px}
+#rList .gh .w,#rList .gh .c{font-size:12px}
+#fList .s{font-size:15px}
+#fList .m{font-size:12px}
+#lList .small,#fList .small{font-size:12px}
+
+/* 説明文は15px、補足（状態・件数・バージョンなど）は12px */
+.small,.note,.cmpsum{font-size:15px}
+.small.aux,.tabhead,.tabhead .small{font-size:12px}
+
+/* パネル（外見・その他・原稿・PDF・ルビ・以前の版・版の比較） */
+.panel{border-radius:14px}
+.panel h2{font-size:18px;font-weight:700}
+.pgroup h3{font-size:15px;font-weight:700;letter-spacing:0}
+.chk{min-height:36px;font-size:15px}
+.num,#pdfPanel .num{font-size:15px}
+.num input,#pdfPanel .num input{min-height:36px;box-sizing:border-box;font-size:15px;border-radius:8px;padding:6px 8px}
+#pdfPanel .num input{width:68px}
+.sybox input,.rbread{min-height:36px;box-sizing:border-box;font-size:15px;padding:6px 10px;border-radius:8px}
+.pdres{font-size:15px;border-radius:10px}
+#docList,#histList,#histDead{border-radius:10px}   /* パネルの中の一覧の枠 */
+#cmpBody .hunk{border-radius:10px}
+#cmpBody .hh button{min-height:36px}
+#fbText{border-radius:8px}   /* 原稿の文をそのまま見せる欄：文字は今のまま（例外） */
+
+/* 浮かんで出る枠：右クリックのメニュー・通知 */
+#ctxMenu{border-radius:10px}
+#ctxMenu button{min-height:36px;font-size:15px;padding-top:0;padding-bottom:2px}
+#toast{font-size:15px;border-radius:10px}
+
+/* 原稿のページの上の案内：表紙の札は補足の12px */
+.cvtag{font-size:12px}
+
+/* iPhone：入力欄の文字は16px（16px未満だと、タップしたときに Safari が画面を拡大して戻らない） */
+@media (max-width:600px) and (pointer:coarse){
+  .fbox input,.nbox textarea,.num input,#pdfPanel .num input,.sybox input,.rbread{font-size:16px}
+}
 </style>
 </head>
 <body>
@@ -541,7 +623,7 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
   </section>
 
   <section class="tab" id="tabLint" hidden>
-    <div class="tabhead"><span id="lCount"></span><span class="small">原稿の順</span></div>
+    <div class="tabhead"><span id="lCount"></span><span class="small aux">原稿の順</span></div>
     <p class="small">句読点やカギ括弧の重複、閉じていないカッコ、日本語のあいだの半角の空白、ルビ・傍点の記号の誤り、段落の頭の字下げ漏れを表示します。</p>
     <ol id="lList"></ol>
     <p class="small" id="lEmpty" hidden>誤りは見つかりません。</p>
@@ -620,18 +702,18 @@ html.ipadapp.syncwait main{opacity:1}   /* iPadのアプリでは、原稿を薄
           <button id="sySignup" type="button">新規登録</button>
           <button id="syForgot" type="button">パスワードを忘れた</button>
         </div>
-        <div class="small err" id="syMsg" role="status"></div>
+        <div class="small aux err" id="syMsg" role="status"></div>
       </div>
       <div id="syncIn" class="sybox" hidden>
-        <div class="small">ログイン中：<b id="syEmail"></b><br>最後に同期した日時：<span id="syLast"></span></div>
+        <div class="small aux">ログイン中：<b id="syEmail"></b><br>最後に同期した日時：<span id="syLast"></span></div>
         <div class="pbtns">
           <button id="syNow" type="button">今すぐ同期</button>
           <button id="syLogout" type="button">ログアウト</button>
         </div>
       </div>
     </div>
-    <div class="small">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
-    <div class="small">Version 1.11</div>
+    <div class="small aux">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
+    <div class="small aux">Version 1.12</div>
   </div>
 </div>
 <div class="scrim" id="manPanel" hidden>
