@@ -405,7 +405,6 @@ html.wmedium .ch.hd{font-weight:500;-webkit-text-stroke:.03em currentColor}
 .num input{width:72px;box-sizing:border-box;font:inherit;font-size:16px;text-align:right;color:var(--ink);background:var(--paper);border:1px solid var(--edge);border-radius:6px;padding:7px 8px;font-variant-numeric:tabular-nums}
 .num input:focus{outline:2px solid var(--accent);outline-offset:0}
 #lhSel button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
-#lhSel button{min-width:64px}
 #tabNotes{gap:10px;padding-bottom:8px}
 #tabPeople{gap:10px;padding-bottom:8px}
 .clink{margin-left:8px;font-weight:400;letter-spacing:0;color:var(--muted)}
@@ -468,6 +467,14 @@ html.ipad.composing #ta{caret-color:var(--caret)}
 /* パソコンで見たときの上部の帯：上下の余白を11pxにして、区切りの線を含めて55pxにする（Kousei・Tebikae とそろえる）。
    iPad（ホーム画面のアプリ・Safari）と集中モードの帯は、これまでどおり */
 html:not(.ipad):not(.focus) .bar{padding-block:11px}
+
+/* 文庫表示：ページを見開き（右に若い番号、左に次の番号）で並べ、左パネルは隠す */
+html.bunko #outline{display:none}
+html.bunko #sheets{flex-direction:row-reverse;flex-wrap:wrap;align-items:flex-start;justify-content:flex-start;column-gap:0;row-gap:var(--gap,16px);width:var(--spreadw);margin-inline:auto}
+html.bunko .pno{top:var(--pnotop)}
+html.bunko .page:nth-child(odd){background-image:linear-gradient(to right,rgba(0,0,0,.06),rgba(0,0,0,0) 7%)}
+html.bunko .page:nth-child(even){background-image:linear-gradient(to left,rgba(0,0,0,.06),rgba(0,0,0,0) 7%)}
+#lookPanel .nrow:has(input:disabled){opacity:.45}
 /* ---------- ウェブアプリ版：同期のログインと、同期の確認中の表示（Hongaki と同じ） ---------- */
 .sybox{display:flex;flex-direction:column;gap:8px}
 .sybox input{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--edge);border-radius:7px;background:var(--paper);color:var(--ink)}
@@ -579,7 +586,7 @@ button.lnk,.panel button.lnk{min-height:0;padding:0;border:0;border-radius:0;bac
 </style>
 </head>
 <body>
-<script>try{ const t=localStorage.getItem('bunpitu-theme'); if(t==='light'||t==='dark') document.documentElement.setAttribute('data-theme',t); if(localStorage.getItem('bunpitu-font')==='gothic') document.documentElement.classList.add('gothic'); if(localStorage.getItem('bunpitu-weight')==='regular') document.documentElement.classList.add('wregular'); if(localStorage.getItem('bunpitu-weight')==='medium') document.documentElement.classList.add('wmedium'); if(localStorage.getItem('bunpitu-focus')==='1') document.documentElement.classList.add('focus'); }catch(e){}</script>
+<script>try{ const t=localStorage.getItem('bunpitu-theme'); if(t==='light'||t==='dark') document.documentElement.setAttribute('data-theme',t); if(localStorage.getItem('bunpitu-font')==='gothic') document.documentElement.classList.add('gothic'); if(localStorage.getItem('bunpitu-weight')==='regular') document.documentElement.classList.add('wregular'); if(localStorage.getItem('bunpitu-weight')==='medium') document.documentElement.classList.add('wmedium'); if(localStorage.getItem('bunpitu-focus')==='1') document.documentElement.classList.add('focus'); if(localStorage.getItem('bunpitu-bunko')==='1') document.documentElement.classList.add('bunko'); }catch(e){}</script>
 
 <header class="bar">
   <input id="title" type="text" placeholder="題名（未設定）" autocomplete="off" spellcheck="false" aria-label="題名">
@@ -609,7 +616,7 @@ button.lnk,.panel button.lnk{min-height:0;padding:0;border:0;border-radius:0;bac
   <div id="topInfo"><span id="tiLeft"></span><span id="tiScene"></span><span id="tiRight"></span></div>
   <div class="stats" aria-live="polite">
     <span>換算<b id="sMai">0</b>枚・<b id="sNet">0</b>文字</span>
-    <span id="sLine2"><span id="sSel" hidden>選択中 <b id="sSelNet">0</b>文字・</span><span id="sSave">接続中…</span></span>
+    <span id="sLine2"><span id="sSel" hidden>選択中 <b id="sSelNet">0</b>文字・</span><span id="sBk" hidden>文庫<b id="sBkN">0</b>ページ・</span><span id="sSave">接続中…</span></span>
   </div>
 </header>
 
@@ -729,7 +736,7 @@ button.lnk,.panel button.lnk{min-height:0;padding:0;border:0;border-radius:0;bac
       </div>
     </div>
     <div class="small aux">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
-    <div class="small aux">Version 1.17</div>
+    <div class="small aux">Version 1.18</div>
   </div>
 </div>
 <div class="scrim" id="manPanel" hidden>
@@ -877,8 +884,15 @@ button.lnk,.panel button.lnk{min-height:0;padding:0;border:0;border-radius:0;bac
       </div>
     </div>
     <div class="pgroup">
-      <h3>ページ番号</h3>
+      <h3>ページ</h3>
       <label class="chk"><input type="checkbox" id="pPno" checked> ページ番号を表示する</label>
+      <label class="chk"><input type="checkbox" id="pBunko"> 文庫表示にする</label>
+      <div class="pbtns" id="bkSel" role="group" aria-label="文庫の字詰め" hidden>
+        <button type="button" data-bk="38x16" aria-pressed="false">38字×16行</button>
+        <button type="button" data-bk="39x17" aria-pressed="false">39字×17行</button>
+        <button type="button" data-bk="40x17" aria-pressed="false">40字×17行</button>
+      </div>
+      <div class="small" id="bkNote" hidden>文庫本と同じ縦横比のページを、見開きで表示します。字詰めはどの端末でも同じです。文庫表示のあいだは、左パネルを隠します。</div>
     </div>
     <div class="pgroup">
       <h3>配色</h3>
@@ -980,12 +994,20 @@ const pages=[];
 
 /* この端末の字詰め（1行の字数・1ページの行数）と行間。1ページの行数が0なら、画面の幅に入るだけの行数にする */
 let ROWS=34, PER_SET=0, PER=20, LH=1.75;
+/* 文庫表示：文庫本の字詰め（1行の字数×1ページの行数）で、ページを見開きに並べる。この端末に記憶する。
+   ROWS は画面で使う1行の字数（文庫表示のあいだは文庫の字数）、ROWS_U は「字詰め」欄で決めた字数 */
+const BK_FMT={'38x16':[38,16],'39x17':[39,17],'40x17':[40,17]};
+let ROWS_U=34, BUNKO=false, BK='38x16';
 try{
   const sm=Math.min(screen.width||0,screen.height||0);
   const r=parseInt(localStorage.getItem('bunpitu-rows'),10); ROWS=r>=10&&r<=60?r:(sm&&sm<900?30:34);
   const p=parseInt(localStorage.getItem('bunpitu-per'),10); PER_SET=p>=4&&p<=60?p:0;
   const h=parseFloat(localStorage.getItem('bunpitu-lh')); if(h===1.6||h===1.75||h===1.9) LH=h;
+  BUNKO=localStorage.getItem('bunpitu-bunko')==='1';
+  const b=localStorage.getItem('bunpitu-bunkofmt'); if(BK_FMT[b]) BK=b;
 }catch(e){}
+ROWS_U=ROWS; if(BUNKO) ROWS=BK_FMT[BK][0];
+const SPREAD=()=>BUNKO?2:1;   /* 1段に並べるページの数（文庫表示は見開きで2ページ） */
 
 /* ---------- 書式の判定・テキスト変換 ---------- */
 const detect=line=>HEADRE.test(line)?'head':'body';
@@ -1547,6 +1569,7 @@ function resize(){
   const pageW=sheets.clientWidth;
   const eb=document.getElementById('edgeBand'), barH=Math.max(document.querySelector('.bar').offsetHeight,eb&&getComputedStyle(eb).display!=='none'?eb.offsetHeight:0);
   root.style.setProperty('--barh',barH+'px');
+  if(BUNKO){ resizeBunko(barH); return; }
   const pageH=Math.max(200,viewH()-barH-GAP*2);
   let cell=pageH/(ROWS+3), per=PER_SET;   /* ページの高さ＝余白1字＋1行の字数＋ぶら下げ・ページ番号2字 */
   if(per){ const byW=pageW/(MINX*2+1+LH*(per-1)); cell=Math.min(cell,byW); }
@@ -1564,6 +1587,35 @@ function resize(){
   root.style.setProperty('--fs','1.18');   /* 字の大きさ＝1字分の約9割 */
   root.style.setProperty('--pagew',(PADX*2+gridW)+'px');
   root.style.setProperty('--pageh',pageH+'px');
+  root.style.setProperty('--gap',GAP+'px');
+  root.classList.add('fit');
+  const perChanged=per!==PER; PER=per;
+  G=geo();
+  if(perChanged&&L) render(); else { paintPages(); placeCaret(); drawSel(); drawHits(); drawLint(); }
+  updLookNote();
+}
+/* 文庫表示：文庫本（A6判 105×148mm）と同じ縦横比のページを、見開き（右・左の2ページ）で画面に収める。
+   1行の字数がページの高さの78%を占めるように字の大きさを決める。版面はページの左右の中央、天は地より少し狭くする */
+function resizeBunko(barH){
+  const root=document.documentElement, [N,per]=BK_FMT[BK];
+  const m=document.querySelector('main'), availW=Math.max(200,m.clientWidth-GAP*2), availH=Math.max(200,viewH()-barH-GAP*2);
+  const pH=N/0.78, pW=pH*105/148;   /* ページの大きさ（字の大きさを1とした値） */
+  const cell=Math.max(8,Math.floor(Math.min(availH/pH,availW/(2*pW))*10)/10);
+  const pageW=Math.floor(pW*cell), pageH=Math.floor(pH*cell), gridW=cell*(LH*(per-1)+1);
+  CELL=cell;
+  PADX=Math.round((pageW-gridW)/2*10)/10;
+  PADT=Math.round((pageH-N*cell)*0.42*10)/10;
+  const pnoTop=PADT+N*cell+(pageH-PADT-N*cell)/2-Math.max(11,cell*.4)*0.7;
+  root.style.setProperty('--padx',PADX+'px');
+  root.style.setProperty('--pad',PADT+'px');
+  root.style.setProperty('--cell',cell+'px');
+  root.style.setProperty('--step',(cell*LH)+'px');
+  root.style.setProperty('--rows',String(N));
+  root.style.setProperty('--fs','1.18');
+  root.style.setProperty('--pagew',pageW+'px');
+  root.style.setProperty('--pageh',pageH+'px');
+  root.style.setProperty('--spreadw',(pageW*2)+'px');
+  root.style.setProperty('--pnotop',Math.round(pnoTop)+'px');
   root.style.setProperty('--gap',GAP+'px');
   root.classList.add('fit');
   const perChanged=per!==PER; PER=per;
@@ -1628,10 +1680,10 @@ function paintPage(p){
 }
 function visRange(){
   const n=pages.length; if(!n) return [0,-1];
-  const r0=pages[0].el.getBoundingClientRect(), pitch=n>1?pages[1].el.getBoundingClientRect().top-r0.top:r0.height+GAP;
+  const S=SPREAD(), r0=pages[0].el.getBoundingClientRect(), pitch=n>S?pages[S].el.getBoundingClientRect().top-r0.top:r0.height+GAP;
   if(!(pitch>0)) return [0,n-1];
   const a=Math.floor(-r0.top/pitch)-1, b=Math.floor((window.innerHeight-r0.top)/pitch)+1;
-  return [Math.max(0,a),Math.min(n-1,b)];
+  return [Math.max(0,a*S),Math.min(n-1,b*S+S-1)];
 }
 function paintPages(){
   if(!L||!G||!pages.length) return;
@@ -1770,6 +1822,8 @@ function updateStats(){
   const st=countIn(doc,paraStart(L.F.end),doc.length,L.markup);   /* 本文の前のページは数えない */
   $('sNet').textContent=fmt(st.net);
   $('sMai').textContent=K?fmt(K.mai):'…';
+  const bk=$('sBk'); bk.hidden=!BUNKO;
+  if(BUNKO) $('sBkN').textContent=fmt(Math.max(0,Math.ceil((L.cols.length-L.mainCol)/PER)));   /* 文庫で何ページになるか（本文の前のページは数えない） */
   const r=selRange(), sl=$('sSel');
   if(r){ const s=countIn(doc,r[0],r[1],L.markup); $('sSelNet').textContent=fmt(s.net); sl.hidden=false; }
   else sl.hidden=true;
@@ -2553,7 +2607,7 @@ function hitPos(x,y){
   let best=null, bd=Infinity;
   for(let p=0;p<pages.length;p++){
     const rc=pages[p].el.getBoundingClientRect();
-    const d=y<rc.top?rc.top-y:y>rc.bottom?y-rc.bottom:0;
+    const d=(y<rc.top?rc.top-y:y>rc.bottom?y-rc.bottom:0)+(x<rc.left?rc.left-x:x>rc.right?x-rc.right:0);
     if(d<bd){ bd=d; best={p,rc}; }
   }
   if(!best) return null;
@@ -2720,10 +2774,14 @@ dragList($('olList'),moveChapter);
 /* ---------- 外見：字詰めと行間（この端末に記憶） ---------- */
 function updLookNote(){
   const n=$('lkNote'); if(!n) return;
+  if(BUNKO){ const [a,b]=BK_FMT[BK]; n.textContent=`文庫表示のあいだは、${a}字×${b}行で表示します。`; return; }
   n.textContent=`いまの画面では、文字の大きさは約${CELL}px、1ページは${PER}行です。文字の大きさは、1行の字数と画面の高さから決まります。1ページの行数を空欄にすると、画面の幅に入るだけの行数になります。`;
 }
 function applyLookUI(){
-  $('lkRows').value=ROWS; $('lkPer').value=PER_SET||'';
+  $('lkRows').value=ROWS_U; $('lkPer').value=PER_SET||'';
+  $('lkRows').disabled=$('lkPer').disabled=BUNKO;
+  $('pBunko').checked=BUNKO; $('bkSel').hidden=$('bkNote').hidden=!BUNKO;
+  document.querySelectorAll('#bkSel button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.bk===BK)));
   document.querySelectorAll('#lhSel button').forEach(b=>b.setAttribute('aria-pressed',String(parseFloat(b.dataset.lh)===LH)));
   updLookNote();
 }
@@ -2731,7 +2789,7 @@ function relayout(){ render(); resize(); showCaretPage(); }
 $('bLook').addEventListener('click',applyLookUI);
 $('lkRows').addEventListener('change',()=>{
   let v=parseInt($('lkRows').value,10); if(!(v>0)) v=ROWS; v=Math.max(10,Math.min(60,v));
-  ROWS=v; try{ localStorage.setItem('bunpitu-rows',String(v)); }catch(e){}
+  ROWS_U=v; if(!BUNKO) ROWS=v; try{ localStorage.setItem('bunpitu-rows',String(v)); }catch(e){}
   applyLookUI(); relayout();
 });
 $('lkPer').addEventListener('change',()=>{
@@ -2744,6 +2802,33 @@ $('lhSel').addEventListener('click',e=>{
   const b=e.target.closest('button[data-lh]'); if(!b) return;
   LH=parseFloat(b.dataset.lh); try{ localStorage.setItem('bunpitu-lh',String(LH)); }catch(err){}
   applyLookUI(); relayout();
+});
+/* 文庫表示の切り替え：切り替える前に見ていた位置（画面の上端にあった字）を、切り替えたあとも表示する */
+function setBunko(on,fmt){
+  const at=topCharIdx();
+  BUNKO=on; if(fmt) BK=fmt;
+  ROWS=BUNKO?BK_FMT[BK][0]:ROWS_U;
+  document.documentElement.classList.toggle('bunko',BUNKO);
+  try{ localStorage.setItem('bunpitu-bunko',BUNKO?'1':''); localStorage.setItem('bunpitu-bunkofmt',BK); }catch(e){}
+  applyLookUI(); render(); resize();
+  if(at!=null) showIdx(at); else showCaretPage();
+  updPageNav();
+}
+/* 画面の上端に出ているページの、最初の字の位置 */
+function topCharIdx(){
+  if(!L||!pages.length) return null;
+  const k=curPageIdx(), col=L.cols[k*PER];
+  return col?col.start:null;
+}
+function showIdx(i){
+  const c=colOf(Math.min(i,doc.length)); if(c==null) return;
+  const pg=pages[Math.floor(c/PER)]; if(!pg) return;
+  window.scrollBy(0,pg.el.getBoundingClientRect().top-topEdge()-GAP);
+}
+$('pBunko').addEventListener('change',()=>setBunko($('pBunko').checked));
+$('bkSel').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-bk]'); if(!b||b.dataset.bk===BK) return;
+  setBunko(true,b.dataset.bk);
 });
 /* 変換中かどうかを画面の作りに伝える（iPadで、変換中だけ標準のカーソルを出すため） */
 ta.addEventListener('compositionstart',()=>document.documentElement.classList.add('composing'));
@@ -3232,13 +3317,13 @@ $('cmpPanel').addEventListener('click',e=>{
 function curPageIdx(){
   /* ページは同じ大きさで等間隔に並ぶので、先頭の2ページの位置から計算する */
   const n=pages.length; if(!n) return 0;
-  const barB=topEdge(), r0=pages[0].el.getBoundingClientRect(), pitch=n>1?pages[1].el.getBoundingClientRect().top-r0.top:r0.height+GAP;
+  const barB=topEdge(), r0=pages[0].el.getBoundingClientRect(), S=SPREAD(), pitch=n>S?pages[S].el.getBoundingClientRect().top-r0.top:r0.height+GAP;
   if(!(pitch>0)) return 0;
-  return Math.max(0,Math.min(n-1,Math.round((barB+GAP-r0.top)/pitch)));
+  return Math.max(0,Math.min(n-1,Math.round((barB+GAP-r0.top)/pitch)*S));
 }
 function goPage(delta){
   if(!pages.length) return;
-  const k=Math.max(0,Math.min(pages.length-1,curPageIdx()+delta));
+  const k=Math.max(0,Math.min(pages.length-1,curPageIdx()+(BUNKO&&Math.abs(delta)===1?delta*2:delta)));
   const barB=topEdge();
   window.scrollBy(0,pages[k].el.getBoundingClientRect().top-barB-GAP);
   updPageNav();
