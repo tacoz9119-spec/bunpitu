@@ -494,7 +494,7 @@ html:not(.ipadapp):not(.focus) .bar{padding-block:11px}
 html.ipadapp #topInfo{font-size:12px}
 
 /* 押すもの：高さ32px・文字14px・角6px・左右の余白12px */
-.tools button,.panel button{min-height:32px;font-size:14px;border-radius:6px}
+.tools button,.panel button{min-height:32px;font-size:13px;border-radius:6px}   /* 枠のあるボタンの文字は13px（Tebikae 1.26 の文字の大きさのルール） */
 .tools button:not(.ico):not(.pg),.panel button{padding:0 12px}
 .tools button.ico,.tools button.pg{min-width:32px;width:32px;padding:0}
 .tools button.ico svg{width:16px;height:16px}
@@ -505,19 +505,19 @@ html.ipadapp #topInfo{font-size:12px}
 .seg,.tabs{border-radius:6px}
 .tools .seg button{min-height:30px;min-width:60px;padding:0 13px}
 @media (max-width:1240px){ .tools .seg button{min-width:52px} }
-.tabs button{min-height:30px;font-size:14px!important;padding:0 4px;white-space:nowrap}   /* 5つを同じ幅に並べるタブ：左パネルの幅に収めるため、左右の余白は4px */
+.tabs button{min-height:30px;font-size:13px!important;padding:0 4px;white-space:nowrap}   /* 5つを同じ幅に並べるタブ：左パネルの幅に収めるため、左右の余白は4px */
 .pbtns[role="group"]{display:inline-flex;flex-wrap:nowrap;gap:0;align-self:flex-start;border:1px solid var(--edge);border-radius:6px;overflow:hidden;width:max-content;max-width:100%}
-.pbtns[role="group"] button,.rmode button{border:0!important;border-radius:0!important;border-left:1px solid var(--edge)!important;min-height:30px!important;font-size:14px!important;padding:0 13px!important;background:var(--paper)}
+.pbtns[role="group"] button,.rmode button{border:0!important;border-radius:0!important;border-left:1px solid var(--edge)!important;min-height:30px!important;font-size:13px!important;padding:0 13px!important;background:var(--paper)}
 .pbtns[role="group"] button:first-child,.rmode button:first-child{border-left:0!important}
 .pbtns[role="group"] button[aria-pressed="true"]{background:var(--ink)!important;color:var(--paper)!important}
 .rrow{flex-wrap:wrap}
 
 /* 左パネル */
-.frow button{min-height:32px;font-size:14px!important;padding:0 12px}
+.frow button{min-height:32px;font-size:13px!important;padding:0 12px}
 .fbox input{min-height:32px;box-sizing:border-box;padding:5px 10px;font-size:14px;border-radius:8px}
 .nbox label,.tabhead .lbl{font-size:12px}
 .nbox textarea{font-size:14px;border-radius:8px}
-#lList .lfix{min-height:32px;font-size:14px!important;padding:0 12px}
+#lList .lfix{min-height:32px;font-size:13px!important;padding:0 12px}
 /* 2段・3段の一覧（目次・校正・検索・ルビの一覧）：枠は付けず今の形のまま（例外）。項目14px・ほかの段12px */
 #olList button{font-size:14px}
 #olList .n,#olList .m{font-size:12px}
@@ -545,7 +545,13 @@ html.ipadapp #topInfo{font-size:12px}
 #pdfPanel .num input{width:64px}
 .sybox input,.rbread{min-height:32px;box-sizing:border-box;font-size:14px;padding:5px 10px;border-radius:8px}
 .pdres{font-size:12px;border-radius:10px}
-#docList,#histList,#histDead{border-radius:10px}   /* パネルの中の一覧の枠。原稿名17px・2段目12pxは今のまま（例外） */
+#docList,#histList,#histDead{border-radius:10px}   /* パネルの中の一覧の枠 */
+/* パネルの中の一覧の行は、枠のない押すもの：項目14px（原稿名もゴシック体の14px）・2段目12px */
+#docList button,#histList button[data-k],#histDead button{font-size:14px}
+#docList .t{font-family:var(--f-ui);font-size:14px}
+#histList .t,#histDead .t{font-size:14px}
+/* 文字のリンク：枠のない12pxの文字（下線つき・強調色） */
+button.lnk,.panel button.lnk{min-height:0;padding:0;border:0;border-radius:0;background:transparent;color:var(--accent);text-decoration:underline;font-size:12px;align-self:center}
 #cmpBody .hunk{border-radius:10px}
 #cmpBody .hh button{min-height:32px}
 #fbText{border-radius:8px}   /* 原稿の文をそのまま見せる欄：文字は今のまま（例外） */
@@ -702,7 +708,7 @@ html.ipadapp #topInfo{font-size:12px}
         <div class="pbtns">
           <button id="syLogin" type="button" class="solid">ログイン</button>
           <button id="sySignup" type="button">新規登録</button>
-          <button id="syForgot" type="button">パスワードを忘れた</button>
+          <button id="syForgot" type="button" class="lnk">パスワードを忘れた</button>
         </div>
         <div class="small aux err" id="syMsg" role="status"></div>
       </div>
@@ -715,7 +721,7 @@ html.ipadapp #topInfo{font-size:12px}
       </div>
     </div>
     <div class="small aux">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
-    <div class="small aux">Version 1.14</div>
+    <div class="small aux">Version 1.15</div>
   </div>
 </div>
 <div class="scrim" id="manPanel" hidden>
