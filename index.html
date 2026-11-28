@@ -568,6 +568,14 @@ button.lnk,.panel button.lnk{min-height:0;padding:0;border:0;border-radius:0;bac
 @media (max-width:600px) and (pointer:coarse){
   .fbox input,.nbox textarea,.num input,#pdfPanel .num input,.sybox input,.rbread{font-size:16px}
 }
+
+/* チェック項目：行の高さを28pxにして、続くチェック項目どうしは行の間隔を0pxにする。
+   チェックボックス（20px）の縁どうしのすき間が8px（切り替えどうしと同じ）になる。
+   見出しのすぐ下は、これまでどおり上へ4px詰めて、見出しから四角の縁まで8pxにする */
+.chk{min-height:28px}
+.pgroup .chk+.chk{margin-top:-8px}
+/* 「その他」の下の「画面の書体」と「Version」の2行：パネルの部品の間隔（16px）を4pxに詰める */
+.panel>.small.aux+.small.aux{margin-top:-12px}
 </style>
 </head>
 <body>
@@ -721,7 +729,7 @@ button.lnk,.panel button.lnk{min-height:0;padding:0;border:0;border-radius:0;bac
       </div>
     </div>
     <div class="small aux">画面の書体：Noto Serif JP・Noto Sans JP（SIL Open Font License 1.1）</div>
-    <div class="small aux">Version 1.15</div>
+    <div class="small aux">Version 1.16</div>
   </div>
 </div>
 <div class="scrim" id="manPanel" hidden>
